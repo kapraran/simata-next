@@ -1,0 +1,47 @@
+x-app: &app
+  build: { context: ., dockerfile: docker/Dockerfile }
+  volumes:
+    - .:/app
+    # Keep the container's Linux node_modules; don't let the host's (Windows) ones shadow them.
+    - node_modules_root:/app/node_modules
+    - node_modules_core:/app/packages/core/node_modules
+    - node_modules_api:/app/apps/api/node_modules
+    - node_modules_web:/app/apps/web/node_modules
+    - node_modules_import:/app/tools/import/node_modules
+
+services:
+  api:
+    <<: *app
+    command: npm run dev -w @simata/api
+    environment:
+      PORT: 3001
+      DATA_DIR: /data
+    ports: ["${API_PORT:-3001}:3001"]
+    volumes:
+      - .:/app
+      - node_modules_root:/app/node_modules
+      - node_modules_core:/app/packages/core/node_modules
+      - node_modules_api:/app/apps/api/node_modules
+      - node_modules_web:/app/apps/web/node_modules
+      - node_modules_import:/app/tools/import/node_modules
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  web:
+    <<: *app
+    command: npm run dev -w @simata/web
+    environment:
+      API_URL: http://api:3001
+    ports: ["${WEB_PORT:-5173}:5173"]
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  node_modules_root:
+  node_modules_core:
+  node_modules_api:
+  node_modules_web:
+  node_modules_import:

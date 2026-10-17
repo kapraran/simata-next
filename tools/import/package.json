@@ -1,0 +1,22 @@
+{
+  "name": "@simata/import",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pull": "tsx src/cli.ts pull",
+    "build-bank": "tsx src/cli.ts build",
+    "seed": "tsx src/cli.ts seed",
+    "typecheck": "tsc -p .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@simata/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "4.23.15",
+    "vitest": "5.0.5",
+    "wrangler": "4.151.1"
+  }
+}

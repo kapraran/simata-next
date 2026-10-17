@@ -1,0 +1,27 @@
+{
+  "name": "simata",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "docker compose up --build",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "import:pull": "npm run pull -w @simata/import --",
+    "import:build": "npm run build-bank -w @simata/import",
+    "import:seed": "npm run seed -w @simata/import"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "typescript": "5.9.3"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tools/*"
+  ]
+}
