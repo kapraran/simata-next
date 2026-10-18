@@ -5,7 +5,17 @@ import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/pro
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildBank, imageHashFromUrl, type RawQuestion } from "@simata/core";
+import {
+  type Bank,
+  buildBank,
+  convertLegacyStats,
+  foldEvents,
+  imageHashFromUrl,
+  type LegacyStat,
+  mulberry32,
+  passChance,
+  type RawQuestion,
+} from "@simata/core";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const content = join(root, "content");
@@ -162,12 +172,33 @@ async function seed() {
   console.log(`seeded ${dest}`);
 }
 
+/** Convert the 2022 stats.json into events + flags (content/legacy.json) and show where that leaves you. */
+async function legacy() {
+  const file = arg("stats");
+  if (!file) throw new Error("usage: legacy --stats <path to old stats.json>");
+  const stats = JSON.parse(await readFile(file, "utf8")) as LegacyStat[];
+  const { events, flags } = convertLegacyStats(stats);
+  await writeFile(join(content, "legacy.json"), JSON.stringify({ events, flags }));
+
+  const current = JSON.parse(await readFile(join(bankDir, "bank.json"), "utf8")).current as string;
+  const bank = JSON.parse(await readFile(join(bankDir, current), "utf8")) as Bank;
+  const ids = new Set(bank.questions.map((q) => q.id));
+  const orphans = events.filter((e) => !ids.has(e.questionId)).length;
+  const now = Date.now();
+  const progress = foldEvents(events);
+  const chance = passChance(bank.questions, progress, now, mulberry32(1));
+  console.log(
+    `${events.length} events on ${progress.states.size} questions (${orphans} orphaned), ` +
+      `flags: ${Object.keys(flags).length}, pass chance today: ${(chance * 100).toFixed(1)}%`,
+  );
+}
+
 const cmd = process.argv[2];
-const cmds: Record<string, () => Promise<void>> = { pull, build, seed };
+const cmds: Record<string, () => Promise<void>> = { pull, build, seed, legacy };
 const run = cmds[cmd ?? ""];
 if (!run) {
   console.error(
-    "usage: cli.ts pull [--bucket simata] [--extra-images dir] | build | seed [--data dir]",
+    "usage: cli.ts pull [--bucket simata] [--extra-images dir] | build | seed [--data dir] | legacy --stats file",
   );
   process.exit(1);
 }

@@ -13,7 +13,8 @@
     "format": "biome check --write .",
     "import:pull": "npm run pull -w @simata/import --",
     "import:build": "npm run build-bank -w @simata/import",
-    "import:seed": "npm run seed -w @simata/import"
+    "import:seed": "npm run seed -w @simata/import",
+    "import:legacy": "npm run legacy -w @simata/import --"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

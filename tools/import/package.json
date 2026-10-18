@@ -8,7 +8,8 @@
     "build-bank": "tsx src/cli.ts build",
     "seed": "tsx src/cli.ts seed",
     "typecheck": "tsc -p .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "legacy": "tsx src/cli.ts legacy"
   },
   "dependencies": {
     "@simata/core": "*"
