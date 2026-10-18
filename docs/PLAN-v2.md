@@ -13,7 +13,7 @@ This replaces `docs/PLAN.md` (the earlier draft). That draft is solid, and I kep
 - **The core idea:** you see each question once, quickly. Questions you answer right on the first try leave the rotation for weeks. Spaced repetition (FSRS) then schedules only what you are actually weak on.
 - **The number that matters:** the exam is reported as 30 questions in 35 minutes with at most **1 mistake** allowed (unofficial sources, verify). That bar is brutal, so the app shows a live **pass chance**, simulated from your own per-question memory model. Most of the gamification hangs off that number.
 - **Architecture:** local-first. The app holds the question bank and an append-only answer log in IndexedDB, and all scheduling runs in the browser from a shared pure-TS `core` package. The server is thin: it stores events, syncs devices, and serves media. This one choice gives you offline training, PC/phone sync, and almost no backend to port between Cloudflare and Docker.
-- **Stack:** pnpm monorepo, TypeScript, Hono, Drizzle (SQLite dialect: D1 in the cloud, a SQLite file locally), React + Vite, Mantine + Tabler Icons, Dexie, ts-fsrs, vite-plugin-pwa, Vitest + Playwright, Biome.
+- **Stack:** npm workspaces monorepo, TypeScript, Hono, plain SQL migrations on SQLite (D1 in the cloud, `node:sqlite` locally), React + Vite, Mantine + Tabler Icons, Dexie, ts-fsrs, vite-plugin-pwa, Vitest + Playwright, Biome.
 
 ---
 
@@ -150,7 +150,7 @@ How an answer becomes an FSRS grade (this mapping lives in `core`, is tunable, a
 
 | Port | Cloudflare | Local / Docker |
 | --- | --- | --- |
-| `EventStore`, `KvStore` (settings, notes) | Drizzle on D1 | Drizzle on better-sqlite3 (same schema and migrations) |
+| `EventStore`, `KvStore` (settings, notes) | One SQL implementation over D1 | The same implementation over `node:sqlite` (same migration file) |
 | `BlobStore` (bank JSON, images) | R2 binding | folder on a volume |
 | `Identity` | Cloudflare Access JWT (`Cf-Access-Jwt-Assertion`, verified) → email | fixed `local` user, or a header set in `.env` |
 | `Clock` | `Date.now` | `Date.now`; fake clock in tests |
@@ -322,7 +322,7 @@ M4 is the first point where it's useful day to day. Everything after that is imp
 | Packages | core, db, storage, api, web | core, api, web | Adapters only have one consumer |
 | Old stats | Optional, derive a box | Imported as timestamped events | Free with event sourcing, and FSRS decays them correctly |
 
-Kept from the draft: Hono + Drizzle on SQLite, Mantine + Tabler, the ports design, Cloudflare Access instead of login code, a single Worker with static assets, contract tests across adapters, tools/import as a CLI rather than an endpoint, and the milestone-with-verification format.
+Kept from the draft: Hono on SQLite, Mantine + Tabler, the ports design, Cloudflare Access instead of login code, a single Worker with static assets, contract tests across adapters, tools/import as a CLI rather than an endpoint, and the milestone-with-verification format.
 
 ---
 
@@ -334,3 +334,14 @@ Everything else has a default above. These change what gets built:
 2. **Exam date**, if you have one. It sets the daily load and the retention target.
 3. **The exam rule:** confirm 30 questions / 35 min / at most 1 mistake (unofficial sources say so), and whether questions are drawn per category.
 4. **Location:** build in `simata/simata-next` (with `git init`), keeping the two old projects as read-only reference?
+
+---
+
+## 14. Changes made while building
+
+- **No Drizzle.** The server schema is two tables and one SQL file. A thin `SqlDb` interface (`all`, `batch`) with a `node:sqlite` and a D1 implementation lets one set of store classes serve both, and the same `migrations/*.sql` is applied by `wrangler d1 migrations apply` or the Node runner. Revisit if the schema grows.
+- **`node:sqlite` instead of better-sqlite3.** Built into Node 24, no native build step on Windows or in Docker.
+- **npm workspaces instead of pnpm** (your call).
+- **Events are inserted 11 per statement.** D1 allows 100 bound parameters per statement; one statement per event made a 250-event sync take 9 s in Miniflare.
+- **"Retired" is measured by FSRS stability of 14+ days**, not by "next review is more than 14 days out", which depends on when you last happened to review a card.
+- **Old Cloudflare resources are never modified.** v2 will use its own new D1 database and R2 bucket (§7.0).
