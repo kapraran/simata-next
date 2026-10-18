@@ -1,42 +1,99 @@
-import { AppShell, Badge, Container, Group, Stack, Text, Title } from "@mantine/core";
-import { IconCircleCheck, IconPlugConnectedX, IconSteeringWheel } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { ActionIcon, AppShell, Container, Group, Loader, Title, Tooltip } from "@mantine/core";
+import {
+  IconCloudCheck,
+  IconCloudOff,
+  IconCloudUp,
+  IconSettings,
+  IconSteeringWheel,
+} from "@tabler/icons-react";
+import { Link, Route, Routes } from "react-router-dom";
+import { db } from "./data/db";
+import { LearnerProvider, useLearner, useSyncState } from "./data/learner";
+import { syncNow } from "./data/sync";
+import { HomePage } from "./pages/Home";
+import { QuizPage } from "./pages/Quiz";
+import { SettingsPage } from "./pages/Settings";
 
-type ApiState = "checking" | "ok" | "down";
+function SyncIndicator() {
+  const sync = useSyncState();
+  const { pendingCount } = useLearner();
+  const failed = sync.state === "error";
+  const label = failed
+    ? "Offline or server unreachable. Your answers are saved here and will upload later."
+    : sync.state === "syncing"
+      ? "Syncing"
+      : pendingCount > 0
+        ? `${pendingCount} answers waiting to upload`
+        : "All synced";
+  return (
+    <Tooltip label={label}>
+      <ActionIcon
+        variant="subtle"
+        color={failed ? "red" : pendingCount > 0 ? "yellow" : "gray"}
+        aria-label={label}
+        onClick={() => void syncNow(db)}
+        data-testid="sync-indicator"
+        data-state={
+          failed
+            ? "error"
+            : sync.state === "syncing"
+              ? "syncing"
+              : pendingCount > 0
+                ? "pending"
+                : "synced"
+        }
+      >
+        {sync.state === "syncing" ? (
+          <Loader size={16} />
+        ) : failed ? (
+          <IconCloudOff size={20} />
+        ) : pendingCount > 0 ? (
+          <IconCloudUp size={20} />
+        ) : (
+          <IconCloudCheck size={20} />
+        )}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
 
 export function App() {
-  const [api, setApi] = useState<ApiState>("checking");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((r) => setApi(r.ok ? "ok" : "down"))
-      .catch(() => setApi("down"));
-  }, []);
-
   return (
-    <AppShell header={{ height: 56 }} padding="md">
-      <AppShell.Header>
-        <Group h="100%" px="md" gap="xs">
-          <IconSteeringWheel size={24} />
-          <Title order={4}>Simata</Title>
-        </Group>
-      </AppShell.Header>
-      <AppShell.Main>
-        <Container size="xs">
-          <Stack gap="sm" mt="xl">
-            <Text c="dimmed">Scaffold is up. Quiz comes later.</Text>
-            <Badge
-              data-testid="api-status"
-              color={api === "ok" ? "green" : api === "down" ? "red" : "gray"}
-              leftSection={
-                api === "down" ? <IconPlugConnectedX size={14} /> : <IconCircleCheck size={14} />
-              }
-            >
-              API: {api}
-            </Badge>
-          </Stack>
-        </Container>
-      </AppShell.Main>
-    </AppShell>
+    <LearnerProvider>
+      <AppShell header={{ height: 56 }} padding="md">
+        <AppShell.Header>
+          <Group h="100%" px="md" justify="space-between">
+            <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
+              <Group gap="xs">
+                <IconSteeringWheel size={24} />
+                <Title order={4}>Simata</Title>
+              </Group>
+            </Link>
+            <Group gap={4}>
+              <SyncIndicator />
+              <ActionIcon
+                component={Link}
+                to="/settings"
+                variant="subtle"
+                color="gray"
+                aria-label="Settings"
+              >
+                <IconSettings size={20} />
+              </ActionIcon>
+            </Group>
+          </Group>
+        </AppShell.Header>
+        <AppShell.Main>
+          <Container size="xs" pt="md" pb="xl">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/quiz/:mode" element={<QuizPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<HomePage />} />
+            </Routes>
+          </Container>
+        </AppShell.Main>
+      </AppShell>
+    </LearnerProvider>
   );
 }
