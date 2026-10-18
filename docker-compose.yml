@@ -1,29 +1,17 @@
-x-app: &app
-  build: { context: ., dockerfile: docker/Dockerfile }
-  volumes:
-    - .:/app
-    # Keep the container's Linux node_modules; don't let the host's (Windows) ones shadow them.
-    - node_modules_root:/app/node_modules
-    - node_modules_core:/app/packages/core/node_modules
-    - node_modules_api:/app/apps/api/node_modules
-    - node_modules_web:/app/apps/web/node_modules
-    - node_modules_import:/app/tools/import/node_modules
-
+# Only source files are mounted from the host. node_modules always comes from the image, so a
+# rebuild (`docker compose up --build`) is all it takes after dependencies change.
 services:
   api:
-    <<: *app
+    build: { context: ., dockerfile: docker/Dockerfile }
     command: npm run dev -w @simata/api
     environment:
       PORT: 3001
       DATA_DIR: /data
     ports: ["${API_PORT:-3001}:3001"]
     volumes:
-      - .:/app
-      - node_modules_root:/app/node_modules
-      - node_modules_core:/app/packages/core/node_modules
-      - node_modules_api:/app/apps/api/node_modules
-      - node_modules_web:/app/apps/web/node_modules
-      - node_modules_import:/app/tools/import/node_modules
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/migrations:/app/apps/api/migrations
+      - ./packages/core/src:/app/packages/core/src
       - ./data:/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -31,17 +19,17 @@ services:
       timeout: 3s
       retries: 10
   web:
-    <<: *app
+    build: { context: ., dockerfile: docker/Dockerfile }
     command: npm run dev -w @simata/web
     environment:
       API_URL: http://api:3001
+      # File events don't cross the Windows/Docker boundary reliably; poll instead.
+      WATCH_POLL: "1"
     ports: ["${WEB_PORT:-5173}:5173"]
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/index.html:/app/apps/web/index.html
+      - ./apps/web/vite.config.ts:/app/apps/web/vite.config.ts
+      - ./packages/core/src:/app/packages/core/src
     depends_on:
       api: { condition: service_healthy }
-
-volumes:
-  node_modules_root:
-  node_modules_core:
-  node_modules_api:
-  node_modules_web:
-  node_modules_import:

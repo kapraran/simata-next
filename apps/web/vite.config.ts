@@ -5,5 +5,9 @@ const apiTarget = process.env.API_URL ?? "http://localhost:3001";
 
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173, proxy: { "/api": apiTarget } },
+  server: {
+    port: 5173,
+    proxy: { "/api": apiTarget },
+    watch: process.env.WATCH_POLL ? { usePolling: true, interval: 300 } : undefined,
+  },
 });
