@@ -10,6 +10,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@mantine/charts": "9.7.3",
     "@mantine/core": "9.7.3",
     "@mantine/hooks": "9.7.3",
     "@simata/core": "*",
@@ -18,7 +19,8 @@
     "dexie-react-hooks": "4.4.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router-dom": "7.18.4"
+    "react-router-dom": "7.18.4",
+    "recharts": "3.10.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

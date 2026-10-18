@@ -26,6 +26,8 @@ export type Progress = {
 };
 
 const MIN_SAMPLES_FOR_SLOW = 20;
+/** Longer than this is an idle tab, not thinking time; it must not skew the speed thresholds. */
+export const MAX_PLAUSIBLE_MS = 120_000;
 
 function percentile(sorted: number[], p: number): number {
   return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] as number;
@@ -58,7 +60,7 @@ export function foldEvents(
       lastGuessed: e.correct && e.guessed,
     });
 
-    if (e.correct && !e.guessed) {
+    if (e.correct && !e.guessed && e.durationMs <= MAX_PLAUSIBLE_MS) {
       const i = correctTimes.findIndex((t) => t > e.durationMs);
       correctTimes.splice(i < 0 ? correctTimes.length : i, 0, e.durationMs);
       if (correctTimes.length >= MIN_SAMPLES_FOR_SLOW) {

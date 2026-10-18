@@ -1,5 +1,6 @@
 import { ActionIcon, AppShell, Container, Group, Loader, Title, Tooltip } from "@mantine/core";
 import {
+  IconChartBar,
   IconCloudCheck,
   IconCloudOff,
   IconCloudUp,
@@ -10,9 +11,11 @@ import { Link, Route, Routes } from "react-router-dom";
 import { db } from "./data/db";
 import { LearnerProvider, useLearner, useSyncState } from "./data/learner";
 import { syncNow } from "./data/sync";
+import { ExamPage } from "./pages/Exam";
 import { HomePage } from "./pages/Home";
 import { QuizPage } from "./pages/Quiz";
 import { SettingsPage } from "./pages/Settings";
+import { StatsPage } from "./pages/Stats";
 
 function SyncIndicator() {
   const sync = useSyncState();
@@ -73,6 +76,15 @@ export function App() {
               <SyncIndicator />
               <ActionIcon
                 component={Link}
+                to="/stats"
+                variant="subtle"
+                color="gray"
+                aria-label="Stats"
+              >
+                <IconChartBar size={20} />
+              </ActionIcon>
+              <ActionIcon
+                component={Link}
                 to="/settings"
                 variant="subtle"
                 color="gray"
@@ -88,6 +100,8 @@ export function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/quiz/:mode" element={<QuizPage />} />
+              <Route path="/exam" element={<ExamPage />} />
+              <Route path="/stats" element={<StatsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<HomePage />} />
             </Routes>

@@ -1,6 +1,6 @@
 import type { Question } from "./bank";
 import type { Progress } from "./fold";
-import { type Rng, shuffle } from "./rng";
+import { type Rng, sampleIndices } from "./rng";
 import { EXAM_SIZE } from "./session";
 
 export type PassRule = { questions: number; maxWrong: number };
@@ -43,11 +43,10 @@ export function passChance(
   const prior = opts.unseenPrior ?? firstSightAccuracy(progress);
   const p = pool.map((q) => pCorrect(q, progress, now, prior));
 
-  const idx = pool.map((_, i) => i);
   let passes = 0;
   for (let s = 0; s < sims; s++) {
     let wrong = 0;
-    for (const i of shuffle(idx, rng).slice(0, rule.questions)) {
+    for (const i of sampleIndices(pool.length, rule.questions, rng)) {
       if (rng() >= (p[i] as number)) wrong++;
     }
     if (wrong <= rule.maxWrong) passes++;

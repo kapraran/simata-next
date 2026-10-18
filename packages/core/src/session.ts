@@ -17,6 +17,7 @@ export type SessionInput = {
 };
 
 export const EXAM_SIZE = 30;
+export const EXAM_MINUTES = 35;
 const WEAK_RETRIEVABILITY = 0.7;
 const CATEGORY_RETRIEVABILITY = 0.9;
 
@@ -52,7 +53,11 @@ export function buildSession(input: SessionInput): string[] {
 
   switch (mode) {
     case "exam":
-      return shuffle(pool, rng)
+      // The real exam draws from the whole bank, so easy flags and mastery don't exclude anything.
+      return shuffle(
+        input.questions.filter((q) => !q.disabled),
+        rng,
+      )
         .slice(0, EXAM_SIZE)
         .map((q) => q.id);
 

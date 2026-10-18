@@ -1,6 +1,23 @@
-import { Alert, Button, Group, Loader, Paper, SimpleGrid, Stack, Text, Title } from "@mantine/core";
-import { buildSession, mulberry32, newSeenBetween } from "@simata/core";
-import { IconBolt, IconPlayerPlay, IconSearch, IconTarget } from "@tabler/icons-react";
+import {
+  Alert,
+  Button,
+  Group,
+  Loader,
+  Paper,
+  RingProgress,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import { buildSession, mulberry32, newSeenBetween, passChance } from "@simata/core";
+import {
+  IconBolt,
+  IconClipboardCheck,
+  IconPlayerPlay,
+  IconSearch,
+  IconTarget,
+} from "@tabler/icons-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useLearner } from "../data/learner";
@@ -14,7 +31,7 @@ function Stat({ label, value, hint }: { label: string; value: number | string; h
         {label}
       </Text>
       <Text
-        fz={28}
+        fz={22}
         fw={700}
         lh={1.2}
         data-testid={`stat-${label.toLowerCase().replace(/\W+/g, "-")}`}
@@ -26,6 +43,35 @@ function Stat({ label, value, hint }: { label: string; value: number | string; h
           {hint}
         </Text>
       )}
+    </Paper>
+  );
+}
+
+function PassMeter({ chance, started }: { chance: number; started: boolean }) {
+  const color = chance >= 80 ? "green" : chance >= 50 ? "yellow" : "red";
+  return (
+    <Paper withBorder p="md" radius="md">
+      <Group wrap="nowrap" gap="lg">
+        <RingProgress
+          size={104}
+          thickness={11}
+          roundCaps
+          sections={[{ value: chance, color }]}
+          label={
+            <Text ta="center" fw={700} fz={22} data-testid="pass-chance">
+              {chance}%
+            </Text>
+          }
+        />
+        <Stack gap={2}>
+          <Text fw={600}>Chance to pass a mock exam today</Text>
+          <Text size="sm" c="dimmed">
+            {started
+              ? "Worked out from how well you remember each question right now."
+              : "Answer a few questions and this starts to move."}
+          </Text>
+        </Stack>
+      </Group>
     </Paper>
   );
 }
@@ -57,7 +103,11 @@ export function HomePage() {
       rng: mulberry32(1),
     }).length;
     const enabled = L.questions.filter((q) => !q.disabled).length;
+    const chance = Math.round(
+      passChance(L.questions, L.progress, now, mulberry32(1), { sims: 1000 }) * 100,
+    );
     return {
+      chance,
       due,
       unseen,
       newLeft,
@@ -83,6 +133,7 @@ export function HomePage() {
   return (
     <Stack gap="lg">
       <Title order={2}>Today</Title>
+      <PassMeter chance={s.chance} started={L.events.length > 0} />
       <SimpleGrid cols={{ base: 2, sm: 4 }}>
         <Stat label="Due now" value={s.due} />
         <Stat label="New left today" value={s.newLeft} />
@@ -100,7 +151,7 @@ export function HomePage() {
         >
           {trainCount === 0 ? "Nothing due. Nice." : `Train (${trainCount})`}
         </Button>
-        <Group grow>
+        <Group grow gap="xs">
           <Button
             component={Link}
             to="/quiz/sweep"
@@ -108,7 +159,16 @@ export function HomePage() {
             leftSection={<IconSearch size={18} />}
             disabled={s.unseen === 0}
           >
-            Sweep ({s.unseen} unseen)
+            Sweep
+          </Button>
+          <Button
+            component={Link}
+            to="/exam"
+            variant="light"
+            color="grape"
+            leftSection={<IconClipboardCheck size={18} />}
+          >
+            Mock exam
           </Button>
           <Button
             component={Link}
@@ -118,7 +178,7 @@ export function HomePage() {
             leftSection={<IconBolt size={18} />}
             disabled={s.weak === 0}
           >
-            Weak spots
+            Weak
           </Button>
         </Group>
       </Stack>

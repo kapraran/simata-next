@@ -20,3 +20,14 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   }
   return a;
 }
+
+/** k distinct indices from 0..n-1 in random order, without shuffling the whole range. */
+export function sampleIndices(n: number, k: number, rng: Rng): number[] {
+  const pool = Array.from({ length: n }, (_, i) => i);
+  const count = Math.min(k, n);
+  for (let i = 0; i < count; i++) {
+    const j = i + Math.floor(rng() * (n - i));
+    [pool[i], pool[j]] = [pool[j] as number, pool[i] as number];
+  }
+  return pool.slice(0, count);
+}

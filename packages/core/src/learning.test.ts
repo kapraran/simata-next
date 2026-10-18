@@ -142,6 +142,12 @@ describe("buildSession", () => {
     expect(ids).not.toContain(questions[2]?.id);
   });
 
+  it("exam ignores easy flags (the real exam draws from the whole bank)", () => {
+    const flags = Object.fromEntries(questions.map((q) => [q.id, "easy" as const]));
+    const ids = buildSession({ ...base, progress: foldEvents([]), mode: "exam", flags });
+    expect(ids).toHaveLength(30);
+  });
+
   it("exam draws 30 distinct questions", () => {
     const ids = buildSession({ ...base, progress: foldEvents([]), mode: "exam" });
     expect(new Set(ids).size).toBe(30);

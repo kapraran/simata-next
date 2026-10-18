@@ -191,6 +191,34 @@ async function legacy() {
     `${events.length} events on ${progress.states.size} questions (${orphans} orphaned), ` +
       `flags: ${Object.keys(flags).length}, pass chance today: ${(chance * 100).toFixed(1)}%`,
   );
+
+  const target = arg("push");
+  if (!target) {
+    console.log("not pushed (add --push http://localhost:3001 to send it to a server)");
+    return;
+  }
+  // A flag is stamped with its question's last 2022 answer, so a flag you change in the app later wins.
+  const lastAt = new Map(
+    stats.map((s) => [s.id, Math.max(0, ...s.answers.map((a) => a.timestamp))]),
+  );
+  const kv = Object.entries(flags).map(([id, flag]) => ({
+    key: `flag:${id}`,
+    value: flag,
+    updatedAt: lastAt.get(id) ?? 0,
+  }));
+  let accepted = 0;
+  for (let i = 0; i < Math.max(events.length, 1); i += 500) {
+    const res = await fetch(new URL("/api/sync", target), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ events: events.slice(i, i + 500), kv: i === 0 ? kv : [] }),
+    });
+    if (!res.ok) throw new Error(`push failed: ${res.status} ${await res.text()}`);
+    accepted += ((await res.json()) as { accepted: number }).accepted;
+  }
+  console.log(
+    `pushed: ${accepted} new events accepted (${events.length - accepted} already on the server)`,
+  );
 }
 
 const cmd = process.argv[2];
@@ -198,7 +226,7 @@ const cmds: Record<string, () => Promise<void>> = { pull, build, seed, legacy };
 const run = cmds[cmd ?? ""];
 if (!run) {
   console.error(
-    "usage: cli.ts pull [--bucket simata] [--extra-images dir] | build | seed [--data dir] | legacy --stats file",
+    "usage: cli.ts pull [--bucket simata] [--extra-images dir] | build | seed [--data dir] | legacy --stats file [--push url]",
   );
   process.exit(1);
 }
