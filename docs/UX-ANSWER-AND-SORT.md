@@ -11,7 +11,7 @@ Status: **A is being built first** (2026-11-06). B, C and the run summary are pa
 ## Shared rules (every concept)
 
 - **Answer first, sort second.** Sorting is only possible after an answer is revealed. Before that, the card can't be dragged.
-- **Questions without an image keep the image slot.** About 570 of 825 questions have no image. Show a placeholder tile of the same height (dashed border, a road-sign icon, the category name, "No image for this question"). The layout must not jump between questions.
+- **Questions without an image show no image box.** About 570 of 825 questions have no image. No empty tile or placeholder is shown for them, so the user is not confused into thinking a picture is missing. Only a question whose picture was lost gets the "Picture lost" tile.
 - **Categories map onto what the app already stores:**
 
   | UI | Stored as | Effect today |

@@ -14,6 +14,7 @@ Source: session 2026-11-06.
 - **Auto-advance off by default.** A correct answer stays on screen until the user moves on. The option stays in Settings for anyone who wants it.
 - **Compact layout on phones.** Image slot about 120 px, answer buttons about 44 px tall, tight spacing. Details in [UX-ANSWER-AND-SORT.md](UX-ANSWER-AND-SORT.md).
 - **Sort model and gestures:** see [UX-ANSWER-AND-SORT.md](UX-ANSWER-AND-SORT.md) (Answer first, sort second; every gesture has a button twin).
+- **No empty image box for questions without a picture.** Only a lost picture gets a "Picture lost" tile; a question that never had a picture shows no image area. (Session 2026-11-07.)
 - **Lost pictures don't hide questions.** Questions whose image file was lost are still shown and answerable, with a "picture lost" placeholder instead of being disabled. (Session 2026-11-07.)
 
 - **The question is the main player; run stats are one thin line.** Stop, daily-goal bar, tally and streak share a single 32 px strip. No separate RUN counter, no second row. The card has one quiet caption line (id + flag/note tools), then picture, question (18 px) and answers. (Session 2026-11-07. Screenshot showed stats rows plus card header pushing the question down and forcing a scroll.)
@@ -40,6 +41,12 @@ Source: session 2026-11-07.
 - **Hosting target set.** Production is one Cloudflare Worker on the custom domain `simata.kapraran.dev` (Workers Static Assets for the SPA + `/api/*` on the same Worker), backed by D1 `simata-next` and R2 `simata-media`. Source: session 2026-11-07. Deployed and healthy.
 - **Auth is optional and config-switched, never removed.** Cloudflare Access is the intended login step: it authenticates the visitor and the Worker verifies the forwarded JWT (`Cf-Access-Jwt-Assertion`). For now it is **off** (`IDENTITY=open`, one shared user) to move faster; enable with `IDENTITY=access` plus `TEAM_DOMAIN`/`ACCESS_AUD`. The Access adapter stays in the code. Source: session 2026-11-07.
 - **PWA is required**, not optional: `vite-plugin-pwa`, manifest with maskable icons, standalone display, auto-update service worker. Source: session 2026-11-07.
+
+## Look and feel
+
+Source: session 2026-11-07.
+
+- **Playful UI revamp, driven by the new logo** (`../Simata Road Safety App Icon.png`). The user finds the current look (stock Mantine, grey, orange "S" favicon) boring. Direction: saturated road-sign blue, sticker-style signs with thick white outlines and soft drop shadows, warm yellow highlights (swoosh underline, "spark" lines), chunky rounded type. Status: planning. Earlier explorations: `docs/mockups/playful-redesign.html`, `docs/mockups/playful-rethink.html`.
 
 ## Working style (for the agent)
 

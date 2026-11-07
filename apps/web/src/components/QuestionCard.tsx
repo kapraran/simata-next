@@ -25,7 +25,6 @@ import {
   IconFlame,
   IconNote,
   IconPhotoOff,
-  IconRoadSign,
   IconX,
 } from "@tabler/icons-react";
 import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -434,30 +433,26 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
                   />
                 </Modal>
               </>
-            ) : (
+            ) : q.imageMissing ? (
               <Group
                 h={IMAGE_H}
                 gap={8}
                 justify="center"
                 wrap="nowrap"
-                c={q.imageMissing ? "orange" : "dimmed"}
-                data-testid={q.imageMissing ? "image-lost" : "image-placeholder"}
+                c="orange"
+                data-testid="image-lost"
                 style={{
                   borderRadius: "var(--mantine-radius-md)",
                   border: "1.5px dashed var(--mantine-color-default-border)",
                   background: "var(--mantine-color-default-hover)",
                 }}
               >
-                {q.imageMissing ? (
-                  <IconPhotoOff size={28} stroke={1.5} />
-                ) : (
-                  <IconRoadSign size={28} stroke={1.5} />
-                )}
+                <IconPhotoOff size={28} stroke={1.5} />
                 <Text size="xs" fw={600} style={{ letterSpacing: "0.04em" }}>
-                  {q.imageMissing ? "Picture lost, answer without it" : q.category}
+                  Picture lost, answer without it
                 </Text>
               </Group>
-            )}
+            ) : null}
 
             <Text fz={18} fw={650} lh={1.35} data-testid="question-text">
               {q.text}
