@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { cachedBank, refreshBank } from "./bank";
 import { getMeta, SimataDb } from "./db";
 import { parseSettings } from "./settings";
-import { syncNow } from "./sync";
+import { syncNow, syncStore } from "./sync";
 import { recordAnswer, setFlag } from "./writes";
 
 /**
@@ -143,7 +143,7 @@ describe("syncNow", () => {
     expect((await a.kv.get("flag:Q1"))?.dirty).toBe(0);
   });
 
-  it("does not lose a local edit made while a sync was in flight", async () => {
+  it("pushes a local edit made while a sync was in flight", async () => {
     const d = fresh();
     await setFlag(d, "Q1", "hard");
     let release!: () => void;
@@ -160,11 +160,10 @@ describe("syncNow", () => {
     await setFlag(d, "Q1", "easy"); // edited while the push is on the wire
     release();
     await running;
+
     const row = await d.kv.get("flag:Q1");
     expect(row?.value).toBe("easy");
-    expect(row?.dirty).toBe(1); // still to be pushed
-    await syncNow(d, server.fetchImpl);
-    expect((await d.kv.get("flag:Q1"))?.dirty).toBe(0);
+    expect(row?.dirty).toBe(0); // a second round in the same run picked the edit up
     expect(server.kv.get("flag:Q1")?.value).toBe("easy");
   });
 
@@ -174,6 +173,47 @@ describe("syncNow", () => {
     const hung = (() => new Promise<Response>(() => {})) as unknown as typeof fetch;
     expect(await syncNow(d, hung, 50)).toMatchObject({ ok: false });
     expect(await syncNow(d, server.fetchImpl)).toMatchObject({ ok: true, pushed: 1 });
+  });
+
+  it("a timed-out run cannot overwrite the state of the next run", async () => {
+    const d = fresh();
+    await answer(d);
+    const aborts = ((_url: string, init: RequestInit) =>
+      new Promise((_, reject) =>
+        init.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        ),
+      )) as unknown as typeof fetch;
+    expect(await syncNow(d, aborts, 50)).toMatchObject({ ok: false });
+    expect(await syncNow(d, server.fetchImpl)).toMatchObject({ ok: true, pushed: 1 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(syncStore.get()).toMatchObject({ state: "idle" });
+  });
+
+  it("picks up a write made while a round is in flight", async () => {
+    const d = fresh();
+    await answer(d, "Q1");
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    let first = true;
+    const slow = (async (url: string, init: RequestInit) => {
+      if (first) {
+        first = false;
+        await gate;
+      }
+      return server.fetchImpl(url, init);
+    }) as unknown as typeof fetch;
+
+    const running = syncNow(d, slow);
+    await new Promise((r) => setTimeout(r, 5));
+    await answer(d, "Q2"); // lands while the first round is on the wire
+    release();
+
+    expect(await running).toMatchObject({ ok: true, pushed: 2 });
+    expect(server.events).toHaveLength(2);
+    expect(await d.events.where("pending").equals(1).count()).toBe(0);
   });
 
   it("records the server cursor", async () => {

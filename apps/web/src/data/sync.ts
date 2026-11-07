@@ -31,6 +31,8 @@ const FETCH_TIMEOUT_MS = 15_000;
 let current: SyncState = { state: "idle" };
 const listeners = new Set<() => void>();
 const inflight = new WeakMap<SimataDb, Promise<SyncResult>>();
+/** Bumped by every write; lets a running sync see writes that landed mid-round. */
+let writeCount = 0;
 
 function set(next: SyncState) {
   current = next;
@@ -64,8 +66,10 @@ export function syncNow(
     log("sync", "joined a sync already running");
     return running;
   }
-  const run = withDeadline(doSync(d, f), timeoutMs, () => {
+  const controller = new AbortController();
+  const run = withDeadline(doSync(d, f, controller.signal), timeoutMs, () => {
     const error = "sync timed out";
+    controller.abort();
     log("sync", "timed out; the next trigger starts a fresh run", { timeoutMs });
     set({ ...current, state: "error", error });
     return { ok: false, error } as const;
@@ -82,19 +86,30 @@ function withDeadline<T>(p: Promise<T>, ms: number, onTimeout: () => T): Promise
   return Promise.race([p, deadline]).finally(() => clearTimeout(timer));
 }
 
-async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
+async function doSync(d: SimataDb, f: typeof fetch, aborted: AbortSignal): Promise<SyncResult> {
   set({ ...current, state: "syncing" });
   let pushed = 0;
   let pulled = 0;
   const started = Date.now();
   log("sync", "start");
   try {
+    let drainedAt = writeCount;
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const readStart = Date.now();
-      const cursor = await getMeta(d, "cursor", 0);
-      const kvRev = await getMeta(d, "kvRev", 0);
-      const pending = await d.events.where("pending").equals(1).limit(PUSH_LIMIT).toArray();
-      const dirty = await d.kv.where("dirty").equals(1).toArray();
+      // One read transaction for the whole round: fewer round trips to IndexedDB, and no
+      // write can land between the four reads and change what is in `pending`.
+      const { cursor, kvRev, pending, dirty } = await d.transaction(
+        "r",
+        d.events,
+        d.kv,
+        d.meta,
+        async () => ({
+          cursor: await getMeta(d, "cursor", 0),
+          kvRev: await getMeta(d, "kvRev", 0),
+          pending: await d.events.where("pending").equals(1).limit(PUSH_LIMIT).toArray(),
+          dirty: await d.kv.where("dirty").equals(1).toArray(),
+        }),
+      );
       log("sync", `round ${round} request`, {
         cursor,
         kvRev,
@@ -106,7 +121,7 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
       const res = await f("/api/sync", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        signal: AbortSignal.any([aborted, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
         body: JSON.stringify({
           cursor,
           kvRev,
@@ -124,16 +139,23 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
       });
 
       const applyStart = Date.now();
+      const pushedIds = new Set(pending.map((e) => e.id));
       await d.transaction("rw", d.events, d.kv, d.meta, async () => {
         // What we pushed is now on the server.
-        await d.events
-          .where("id")
-          .anyOf(pending.map((e) => e.id))
-          .modify({ pending: 0 });
-        // What others pushed (and our own, echoed back) is now here.
-        await d.events.bulkPut(
-          data.events.map(({ seq: _seq, ...e }): LocalEvent => ({ ...e, pending: 0 })),
-        );
+        if (pending.length > 0) {
+          await d.events
+            .where("id")
+            .anyOf(pending.map((e) => e.id))
+            .modify({ pending: 0 });
+        }
+        // The rest is new from other devices. Our own events come back echoed; skip them,
+        // they are already here and re-writing them only churns the live queries.
+        const fromOthers = data.events.filter((e) => !pushedIds.has(e.id));
+        if (fromOthers.length > 0) {
+          await d.events.bulkPut(
+            fromOthers.map(({ seq: _seq, ...e }): LocalEvent => ({ ...e, pending: 0 })),
+          );
+        }
 
         // Settings/notes/flags: newest write wins. Keep a local edit made while we were syncing.
         for (const p of dirty) {
@@ -153,12 +175,22 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
 
       pushed += pending.length;
       pulled += data.events.length;
-      if (!data.hasMore && pending.length < PUSH_LIMIT) break;
+      if (data.hasMore || pending.length >= PUSH_LIMIT) continue;
+      // A write that landed while this round was in flight is not in `pending` yet. Do one
+      // more round now instead of leaving it pending until the next trigger.
+      if (writeCount !== drainedAt) {
+        drainedAt = writeCount;
+        continue;
+      }
+      break;
     }
+    if (aborted.aborted) return { ok: false, error: "sync timed out" };
     set({ state: "idle", lastOkAt: Date.now() });
     log("sync", "done", { pushed, pulled, ms: Date.now() - started });
     return { ok: true, pushed, pulled };
   } catch (e) {
+    // The deadline already reported this run; a late error must not overwrite the next run's state.
+    if (aborted.aborted) return { ok: false, error: "sync timed out" };
     const error = e instanceof Error ? e.message : String(e);
     log("sync", "failed", { error, ms: Date.now() - started });
     set({ ...current, state: "error", error });
@@ -170,6 +202,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 
 /** Sync soon, collapsing bursts of writes into one request. */
 export function requestSync(d: SimataDb, delayMs = 1500) {
+  writeCount++;
   clearTimeout(timer);
   timer = setTimeout(() => void syncNow(d), delayMs);
 }
