@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Sign, type SignName } from "../components/Signs";
 import { useLearner } from "../data/learner";
+import { useT } from "../i18n";
 import { localDayRange } from "../lib/time";
 import { useNow } from "../lib/useNow";
 
@@ -51,6 +52,7 @@ function Stat({
 
 /** The pass chance drawn as a speed-limit sign: the red ring fills as the chance goes up. */
 function PassMeter({ chance, started }: { chance: number; started: boolean }) {
+  const t = useT();
   const circ = 2 * Math.PI * 44;
   return (
     <Group className="sim-sticker" wrap="nowrap" gap="md" p="sm" mt={-54} pos="relative">
@@ -59,7 +61,7 @@ function PassMeter({ chance, started }: { chance: number; started: boolean }) {
         height="96"
         viewBox="0 0 120 124"
         role="img"
-        aria-label={`${chance} percent chance to pass`}
+        aria-label={t.home.passMeter.aria(chance)}
         style={{ flex: "none" }}
       >
         <circle cx="60" cy="64" r="56" fill="#0B2A6B" />
@@ -95,12 +97,10 @@ function PassMeter({ chance, started }: { chance: number; started: boolean }) {
       </svg>
       <Stack gap={2}>
         <Text className="sim-display" fw={700} fz={18} lh={1.15}>
-          Chance to pass a mock exam today
+          {t.home.passMeter.title}
         </Text>
         <Text size="sm" c="dimmed" fw={600}>
-          {started
-            ? "Worked out from how well you remember each question right now."
-            : "Answer a few questions and this starts to move."}
+          {started ? t.home.passMeter.started : t.home.passMeter.notStarted}
         </Text>
       </Stack>
     </Group>
@@ -108,6 +108,7 @@ function PassMeter({ chance, started }: { chance: number; started: boolean }) {
 }
 
 export function HomePage() {
+  const t = useT();
   const L = useLearner();
   const now = useNow();
 
@@ -143,9 +144,8 @@ export function HomePage() {
 
   if (L.noBank) {
     return (
-      <Alert color="yellow" title="No question bank">
-        The server has no bank and this device has none cached yet. Seed it with the import tool,
-        then reload.
+      <Alert color="yellow" title={t.home.noBank.title}>
+        {t.home.noBank.body}
       </Alert>
     );
   }
@@ -155,15 +155,15 @@ export function HomePage() {
     <Stack gap="md">
       <div className="sim-hero">
         <Title order={2} fz={26} c="white">
-          Ready to roll?
+          {t.home.hero}
         </Title>
       </div>
       <PassMeter chance={s.chance} started={L.events.length > 0} />
       <SimpleGrid cols={2} spacing="xs">
-        <Stat label="Answered today" value={s.today} sign="round" />
-        <Stat label="Never seen" value={s.unseen} sign="diamond" />
-        <Stat label="Confident" value={s.confident} total={s.total} sign="info" />
-        <Stat label="Weak spots" value={s.weak} sign="warn" />
+        <Stat label={t.home.stat.today} value={s.today} sign="round" />
+        <Stat label={t.home.stat.unseen} value={s.unseen} sign="diamond" />
+        <Stat label={t.home.stat.confident} value={s.confident} total={s.total} sign="info" />
+        <Stat label={t.home.stat.weak} value={s.weak} sign="warn" />
       </SimpleGrid>
 
       <Button
@@ -173,7 +173,7 @@ export function HomePage() {
         size="lg"
         leftSection={<IconPlayerPlayFilled size={22} />}
       >
-        Train
+        {t.home.train}
       </Button>
       <SimpleGrid cols={2} spacing="xs">
         <Button
@@ -184,7 +184,7 @@ export function HomePage() {
           styles={{ label: { flexDirection: "column", gap: 2 } }}
         >
           <Sign name="stop" size={28} />
-          Mock exam
+          {t.home.mockExam}
         </Button>
         <Button
           component={Link}
@@ -195,16 +195,14 @@ export function HomePage() {
           styles={{ label: { flexDirection: "column", gap: 2 } }}
         >
           <Sign name="warn" size={28} />
-          Weak
+          {t.home.weak}
         </Button>
       </SimpleGrid>
 
       {s.missingPictures > 0 && (
         <Group gap="xs" c="dimmed">
           <IconPhotoOff size={16} />
-          <Text size="xs">
-            {s.missingPictures} questions lost their picture. They are shown with a placeholder.
-          </Text>
+          <Text size="xs">{t.home.missingPictures(s.missingPictures)}</Text>
         </Group>
       )}
     </Stack>

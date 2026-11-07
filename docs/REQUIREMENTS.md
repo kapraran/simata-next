@@ -67,6 +67,15 @@ Source: session 2026-11-07.
 - **Home: no daily-goal road widget.** The user did not like the car-on-a-road goal bar in the mockup; removed. (Session 2026-11-07, artifact comment.)
 - **Drop Sweep as a separate mode; Train is the one practice entry.** Sweep (unseen questions, ignores the new-per-day cap) confused the user ("what is the Sweep?") and they asked to make it "only Train". Home keeps Train plus Mock exam and Weak. (Session 2026-11-07, artifact comment.)
 
+## Language and appearance
+
+Source: session 2026-11-07.
+
+- **Greek UI, English fallback.** All interface strings live in `apps/web/src/i18n.tsx`; English and Greek catalogs are typed against each other so a missing translation fails the typecheck. Question and answer text stays as it comes from the bank.
+- **Device language is the default.** First visit uses the browser's language (`el*` → Greek, anything else → English); an explicit choice from Settings is stored locally and wins afterwards. The document `lang` attribute follows the selection.
+- **Language and theme are device preferences, not synced settings.** They are stored in `localStorage`, so a phone and a desktop can differ. Theme is Mantine's `auto | light | dark` (auto = system).
+- **Both are selectable in Settings.** Settings shows a Language select (System / English / Ελληνικά) and a Theme select (System / Light / Dark) above the auto-advance switch. Choosing System for language goes back to following the device.
+
 ## Working style (for the agent)
 
 Source: session 2026-11-06.

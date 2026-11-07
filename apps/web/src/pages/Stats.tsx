@@ -3,6 +3,7 @@ import { Badge, Group, Loader, Paper, Progress, Stack, Text, Title } from "@mant
 import { useMemo } from "react";
 import { currentPassStreak } from "../data/exams";
 import { useLearner } from "../data/learner";
+import { useT } from "../i18n";
 import { categoryMastery, dailyStats, passChanceTrend, trouble } from "../lib/stats";
 import { useNow } from "../lib/useNow";
 
@@ -20,6 +21,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const shortDay = (d: string) => d.slice(5);
 
 export function StatsPage() {
+  const t = useT();
   const L = useLearner();
   const now = useNow();
 
@@ -37,8 +39,8 @@ export function StatsPage() {
   if (L.events.length === 0) {
     return (
       <Stack gap="sm">
-        <Title order={2}>Stats</Title>
-        <Text c="dimmed">Answer some questions and your progress shows up here.</Text>
+        <Title order={2}>{t.stats.title}</Title>
+        <Text c="dimmed">{t.stats.empty}</Text>
       </Stack>
     );
   }
@@ -48,14 +50,17 @@ export function StatsPage() {
 
   return (
     <Stack gap="lg">
-      <Title order={2}>Stats</Title>
+      <Title order={2}>{t.stats.title}</Title>
 
-      <Section title="Chance of passing a mock exam">
+      <Section title={t.stats.passChance}>
         <LineChart
           h={160}
-          data={s.trend.map((t) => ({ day: shortDay(t.day), "Pass chance": t.chance }))}
+          data={s.trend.map((p) => ({
+            day: shortDay(p.day),
+            [t.stats.passChanceSeries]: p.chance,
+          }))}
           dataKey="day"
-          series={[{ name: "Pass chance", color: "blue.6" }]}
+          series={[{ name: t.stats.passChanceSeries, color: "blue.6" }]}
           yAxisProps={{ domain: [0, 100] }}
           unit="%"
           curveType="monotone"
@@ -63,12 +68,15 @@ export function StatsPage() {
         />
       </Section>
 
-      <Section title="Accuracy per day">
+      <Section title={t.stats.accuracy}>
         <LineChart
           h={140}
-          data={s.daily.map((d) => ({ day: shortDay(d.day), Accuracy: d.accuracy }))}
+          data={s.daily.map((d) => ({
+            day: shortDay(d.day),
+            [t.stats.accuracySeries]: d.accuracy,
+          }))}
           dataKey="day"
-          series={[{ name: "Accuracy", color: "teal.6" }]}
+          series={[{ name: t.stats.accuracySeries, color: "teal.6" }]}
           yAxisProps={{ domain: [0, 100] }}
           unit="%"
           curveType="monotone"
@@ -76,25 +84,28 @@ export function StatsPage() {
         />
       </Section>
 
-      <Section title="Answers per day">
+      <Section title={t.stats.answers}>
         <BarChart
           h={140}
-          data={s.daily.map((d) => ({ day: shortDay(d.day), Answers: d.answers }))}
+          data={s.daily.map((d) => ({
+            day: shortDay(d.day),
+            [t.stats.answersSeries]: d.answers,
+          }))}
           dataKey="day"
-          series={[{ name: "Answers", color: "violet.6" }]}
+          series={[{ name: t.stats.answersSeries, color: "violet.6" }]}
           withLegend={false}
         />
       </Section>
 
-      <Section title="Mock exams">
+      <Section title={t.stats.exams}>
         {exams.length === 0 ? (
           <Text size="sm" c="dimmed">
-            None yet.
+            {t.stats.noneYet}
           </Text>
         ) : (
           <>
             <Text size="sm" c="dimmed">
-              Best score {best}/{exams[0]?.total}. Passed in a row: {currentPassStreak(exams)}.
+              {t.stats.best(best, exams[0]?.total ?? 0, currentPassStreak(exams))}
             </Text>
             {exams.slice(0, 8).map((e) => (
               <Group key={e.at} justify="space-between">
@@ -104,7 +115,7 @@ export function StatsPage() {
                     {e.right}/{e.total}
                   </Text>
                   <Badge color={e.passed ? "green" : "red"} variant="light">
-                    {e.passed ? "Pass" : "Fail"}
+                    {e.passed ? t.stats.pass : t.stats.fail}
                   </Badge>
                 </Group>
               </Group>
@@ -113,13 +124,13 @@ export function StatsPage() {
         )}
       </Section>
 
-      <Section title="By category (weakest first)">
+      <Section title={t.stats.byCategory}>
         {s.cats.map((c) => (
           <div key={c.category}>
             <Group justify="space-between" gap="xs">
               <Text size="sm">{c.category}</Text>
               <Text size="xs" c="dimmed">
-                {c.seen}/{c.total} seen · {Math.round(c.mastery * 100)}%
+                {t.stats.seen(c.seen, c.total, Math.round(c.mastery * 100))}
               </Text>
             </Group>
             <Progress
@@ -131,29 +142,29 @@ export function StatsPage() {
         ))}
       </Section>
 
-      <Section title="Most missed">
+      <Section title={t.stats.mostMissed}>
         {s.trouble.mostMissed.length === 0 ? (
           <Text size="sm" c="dimmed">
-            Nothing missed yet.
+            {t.stats.nothingMissed}
           </Text>
         ) : (
           s.trouble.mostMissed.map((m) => (
-            <QuestionLine key={m.id} id={m.id} detail={`${m.misses} missed of ${m.seen}`} />
+            <QuestionLine key={m.id} id={m.id} detail={t.stats.missedDetail(m.misses, m.seen)} />
           ))
         )}
       </Section>
 
-      <Section title="Slowest">
+      <Section title={t.stats.slowest}>
         {s.trouble.slowest.length === 0 ? (
           <Text size="sm" c="dimmed">
-            Needs a few repeat answers.
+            {t.stats.needsRepeats}
           </Text>
         ) : (
           s.trouble.slowest.map((m) => (
             <QuestionLine
               key={m.id}
               id={m.id}
-              detail={`${(m.avgMs / 1000).toFixed(1)} s on average`}
+              detail={t.stats.avgTime((m.avgMs / 1000).toFixed(1))}
             />
           ))
         )}

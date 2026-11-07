@@ -11,6 +11,7 @@ import { LogoMark, SignSprite } from "./components/Signs";
 import { db } from "./data/db";
 import { LearnerProvider, useLearner, useSyncState } from "./data/learner";
 import { syncNow } from "./data/sync";
+import { useT } from "./i18n";
 import { ExamPage } from "./pages/Exam";
 import { HomePage } from "./pages/Home";
 import { QuizPage } from "./pages/Quiz";
@@ -18,16 +19,17 @@ import { SettingsPage } from "./pages/Settings";
 import { StatsPage } from "./pages/Stats";
 
 function SyncIndicator() {
+  const t = useT();
   const sync = useSyncState();
   const { pendingCount } = useLearner();
   const failed = sync.state === "error";
   const label = failed
-    ? "Offline or server unreachable. Your answers are saved here and will upload later."
+    ? t.app.sync.offline
     : sync.state === "syncing"
-      ? "Syncing"
+      ? t.app.sync.syncing
       : pendingCount > 0
-        ? `${pendingCount} answers waiting to upload`
-        : "All synced";
+        ? t.app.sync.pending(pendingCount)
+        : t.app.sync.synced;
   return (
     <Tooltip label={label}>
       <ActionIcon
@@ -62,6 +64,7 @@ function SyncIndicator() {
 }
 
 export function App() {
+  const t = useT();
   // The quiz owns the whole screen height, so it gets less padding than other pages.
   const inQuiz = useMatch("/quiz/:mode") !== null;
   return (
@@ -74,7 +77,7 @@ export function App() {
               <Link
                 to="/"
                 style={{ color: "inherit", textDecoration: "none" }}
-                aria-label="Simata home"
+                aria-label={t.app.home}
               >
                 <Group gap="xs">
                   <LogoMark size={28} />
@@ -89,7 +92,7 @@ export function App() {
                   variant="subtle"
                   color="gray"
                   style={{ color: "#fff" }}
-                  aria-label="Stats"
+                  aria-label={t.app.stats}
                 >
                   <IconChartBar size={20} />
                 </ActionIcon>
@@ -99,7 +102,7 @@ export function App() {
                   variant="subtle"
                   color="gray"
                   style={{ color: "#fff" }}
-                  aria-label="Settings"
+                  aria-label={t.app.settings}
                 >
                   <IconSettings size={20} />
                 </ActionIcon>

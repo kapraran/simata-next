@@ -31,6 +31,7 @@ import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { imageUrl } from "../data/bank";
 import { db } from "../data/db";
 import { recordAnswer, setFlag, setNote } from "../data/writes";
+import { useT } from "../i18n";
 import { type Sort, swipeDirection } from "../lib/swipe";
 
 export type { Sort };
@@ -62,13 +63,14 @@ const EXIT_MS = 220;
 /** Shrinks on short screens so the question and answers stay in view. Same slot with or without a picture. */
 const IMAGE_H = "clamp(72px, 18dvh, 170px)";
 
-const STAMP: Record<Sort, { label: string; color: string }> = {
-  hard: { label: "HARD", color: "var(--sim-orange)" },
-  next: { label: "NEXT", color: "var(--sim-blue)" },
-  easy: { label: "EASY", color: "var(--sim-teal)" },
+const STAMP: Record<Sort, { color: string }> = {
+  hard: { color: "var(--sim-orange)" },
+  next: { color: "var(--sim-blue)" },
+  easy: { color: "var(--sim-teal)" },
 };
 
 export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNext }: Props) {
+  const t = useT();
   const reduceMotion = useReducedMotion();
   const options = useMemo(() => shuffle(q.options, Math.random), [q]);
   const shownAt = useRef(Date.now());
@@ -312,7 +314,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
               pointerEvents: "none",
             }}
           >
-            {STAMP[hint].label}
+            {t.question.stamp[hint]}
           </Box>
         )}
 
@@ -363,37 +365,37 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
                   data-testid="guessed"
                   style={{ flex: "none" }}
                 >
-                  {guessed ? "Guessed" : "I guessed (G)"}
+                  {guessed ? t.question.guessed : t.question.iGuessed}
                 </Button>
               )}
               <Group gap={2} wrap="nowrap">
-                <Tooltip label="Hard: see it more (H)">
+                <Tooltip label={t.question.hardHint}>
                   <ActionIcon
                     variant={flag === "hard" ? "filled" : "subtle"}
                     color="orange"
                     size="md"
-                    aria-label="Mark hard"
+                    aria-label={t.question.markHard}
                     onClick={() => toggleFlag("hard")}
                   >
                     <IconFlame size={16} />
                   </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Easy: stop showing it (E)">
+                <Tooltip label={t.question.easyHint}>
                   <ActionIcon
                     variant={flag === "easy" ? "filled" : "subtle"}
                     color="teal"
                     size="md"
-                    aria-label="Mark easy"
+                    aria-label={t.question.markEasy}
                     onClick={() => toggleFlag("easy")}
                   >
                     <IconFeather size={16} />
                   </ActionIcon>
                 </Tooltip>
-                <Tooltip label="Note (N)">
+                <Tooltip label={t.question.noteHint}>
                   <ActionIcon
                     variant={note ? "light" : "subtle"}
                     size="md"
-                    aria-label="Edit note"
+                    aria-label={t.question.editNote}
                     onClick={() => openNote(true)}
                   >
                     <IconNote size={16} />
@@ -456,7 +458,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
               >
                 <IconPhotoOff size={28} stroke={1.5} />
                 <Text size="xs" fw={600} style={{ letterSpacing: "0.04em" }}>
-                  Picture lost, answer without it
+                  {t.question.pictureLost}
                 </Text>
               </Group>
             ) : null}
@@ -470,7 +472,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
                 autoFocus
                 autosize
                 minRows={2}
-                placeholder="Your note for this question"
+                placeholder={t.question.notePlaceholder}
                 value={draft}
                 onChange={(e) => setDraft(e.currentTarget.value)}
                 onBlur={saveNote}
@@ -538,9 +540,9 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
                       style={{ display: "flex", alignItems: "center", flex: "none" }}
                     >
                       {revealed && o.correct ? (
-                        <IconCheck size={22} stroke={3} aria-label="Correct answer" />
+                        <IconCheck size={22} stroke={3} aria-label={t.question.correct} />
                       ) : revealed && o.text === picked ? (
-                        <IconX size={22} stroke={3} aria-label="Your answer, wrong" />
+                        <IconX size={22} stroke={3} aria-label={t.question.yourWrong} />
                       ) : null}
                     </Box>
                   </button>
@@ -564,7 +566,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
             styles={{ ...STACKED, root: { background: "var(--sim-orange)", color: "#fff" } }}
           >
             <IconArrowLeft size={18} />
-            <span>Hard</span>
+            <span>{t.question.hard}</span>
           </Button>
           <Button
             h={52}
@@ -576,7 +578,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
             styles={{ ...STACKED, root: { background: "var(--sim-teal)", color: "#fff" } }}
           >
             <IconArrowUp size={18} />
-            <span>Easy</span>
+            <span>{t.question.easy}</span>
           </Button>
           <Button
             h={52}
@@ -597,7 +599,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
                 : undefined
             }
           >
-            Next
+            {t.question.next}
           </Button>
         </Box>
         <style>{"@keyframes simata-fill{to{background-size:100% 100%}}"}</style>

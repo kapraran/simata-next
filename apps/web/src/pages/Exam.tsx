@@ -28,6 +28,7 @@ import { imageUrl } from "../data/bank";
 import { db } from "../data/db";
 import { useLearner } from "../data/learner";
 import { recordAnswer, saveExam } from "../data/writes";
+import { useT } from "../i18n";
 import { useNow } from "../lib/useNow";
 
 type Answer = { questionId: string; picked: string; correct: boolean };
@@ -41,6 +42,7 @@ function clock(ms: number): string {
 }
 
 export function ExamPage() {
+  const t = useT();
   const L = useLearner();
   const [ids, setIds] = useState<string[] | null>(null);
   const [startedAt, setStartedAt] = useState(0);
@@ -90,7 +92,7 @@ export function ExamPage() {
     });
   }, [ids, finishedAt, answers, startedAt]);
 
-  if (L.noBank) return <Alert color="yellow">No question bank yet.</Alert>;
+  if (L.noBank) return <Alert color="yellow">{t.exam.noBank}</Alert>;
   if (!L.ready) return <Loader />;
 
   if (ids === null) return <Intro onStart={start} />;
@@ -101,14 +103,14 @@ export function ExamPage() {
 
   const index = answers.length;
   const q = L.byId.get(ids[index] as string);
-  if (!q) return <Alert color="red">Question {ids[index]} is missing from the bank.</Alert>;
+  if (!q) return <Alert color="red">{t.exam.missingQuestion(ids[index] as string)}</Alert>;
 
   const remaining = EXAM_MS - (now - startedAt);
   return (
     <Stack gap="md">
       <Group justify="space-between">
         <Text fw={600} data-testid="exam-position">
-          Question {index + 1} of {ids.length}
+          {t.exam.position(index + 1, ids.length)}
         </Text>
         <Badge
           size="lg"
@@ -182,23 +184,21 @@ function ResultSign({ passed }: { passed: boolean }) {
 }
 
 function Intro({ onStart }: { onStart: () => void }) {
+  const t = useT();
   const L = useLearner();
   return (
     <Paper p="lg" radius="lg">
       <Stack gap="md">
-        <Title order={3}>Mock exam</Title>
+        <Title order={3}>{t.exam.intro.title}</Title>
         <Text>
-          {DEFAULT_RULE.questions} questions, {EXAM_MINUTES} minutes. You see the answers only at
-          the end. You pass with at most {DEFAULT_RULE.maxWrong} mistake
-          {DEFAULT_RULE.maxWrong === 1 ? "" : "s"}.
+          {t.exam.intro.description(DEFAULT_RULE.questions, EXAM_MINUTES, DEFAULT_RULE.maxWrong)}
         </Text>
         <Text size="xs" c="dimmed">
-          That rule is from unofficial sources. Check it against the official one before relying on
-          it.
+          {t.exam.intro.disclaimer}
         </Text>
         {L.exams.length === 0 && (
           <Text size="sm" c="dimmed">
-            Your answers here count towards your schedule like any other.
+            {t.exam.intro.counts}
           </Text>
         )}
         <Button
@@ -206,7 +206,7 @@ function Intro({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           data-testid="start-exam"
         >
-          Start
+          {t.exam.intro.start}
         </Button>
       </Stack>
     </Paper>
@@ -220,6 +220,7 @@ function ExamQuestion({
   question: Question;
   onAnswer: (a: Answer) => void;
 }) {
+  const t = useT();
   const options = useMemo(() => shuffle(q.options, Math.random), [q]);
   const shownAt = useRef(Date.now());
   const [picked, setPicked] = useState<string | null>(null);
@@ -265,7 +266,7 @@ function ExamQuestion({
       {q.imageMissing && (
         <Group gap="xs" c="orange">
           <IconPhotoOff size={16} />
-          <Text size="sm">Picture lost — answer without it.</Text>
+          <Text size="sm">{t.exam.pictureLost}</Text>
         </Group>
       )}
       <Stack gap="xs">
@@ -292,6 +293,7 @@ function ExamQuestion({
 }
 
 function QuitButton() {
+  const t = useT();
   const navigate = useNavigate();
   return (
     <Button
@@ -299,10 +301,10 @@ function QuitButton() {
       color="gray"
       size="xs"
       onClick={() => {
-        if (window.confirm("Leave the exam? It will not be scored.")) navigate("/");
+        if (window.confirm(t.exam.quitConfirm)) navigate("/");
       }}
     >
-      Quit exam
+      {t.exam.quit}
     </Button>
   );
 }
@@ -318,6 +320,7 @@ function Result({
   byId: ReadonlyMap<string, Question>;
   onAgain: () => void;
 }) {
+  const t = useT();
   const right = answers.filter((a) => a.correct).length;
   const wrong = ids.length - right;
   const passed = wrong <= DEFAULT_RULE.maxWrong;
@@ -335,19 +338,21 @@ function Result({
         <Stack align="center" gap="xs" ta="center">
           <ResultSign passed={passed} />
           <Title order={2} c={passed ? "green" : "red"} data-testid="exam-verdict">
-            {passed ? "Passed" : "Not passed"}
+            {passed ? t.exam.result.passed : t.exam.result.failed}
           </Title>
           <span className="sim-swoosh" style={{ width: 120 }} />
           <Text data-testid="exam-score">
-            {right} of {ids.length} right
-            {ids.length - answers.length > 0 ? ` (${ids.length - answers.length} unanswered)` : ""}
+            {t.exam.result.score(right, ids.length)}
+            {ids.length - answers.length > 0
+              ? t.exam.result.unanswered(ids.length - answers.length)
+              : ""}
           </Text>
         </Stack>
       </Paper>
 
       {missed.length > 0 && (
         <Stack gap="xs">
-          <Text fw={600}>What you missed</Text>
+          <Text fw={600}>{t.exam.result.missed}</Text>
           {missed.map((m) => {
             const q = byId.get(m.questionId);
             return (
@@ -360,11 +365,11 @@ function Result({
                 </Text>
                 {m.picked && (
                   <Text size="sm" c="red">
-                    You: {m.picked}
+                    {t.exam.result.you(m.picked)}
                   </Text>
                 )}
                 <Text size="sm" c="green">
-                  Right: {q?.options.find((o) => o.correct)?.text}
+                  {t.exam.result.right(q?.options.find((o) => o.correct)?.text ?? "")}
                 </Text>
               </Paper>
             );
@@ -374,10 +379,10 @@ function Result({
 
       <Group>
         <Button leftSection={<IconRepeat size={18} />} onClick={onAgain}>
-          Another exam
+          {t.exam.result.again}
         </Button>
         <Button component={Link} to="/" variant="default" leftSection={<IconHome size={18} />}>
-          Home
+          {t.exam.result.home}
         </Button>
       </Group>
     </Stack>

@@ -16,8 +16,9 @@ import { buildSession, mulberry32, pickNext, type RunEntry } from "@simata/core"
 import { IconBolt, IconHome, IconPlayerPlay, IconPlayerStopFilled } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { type Outcome, QuestionCard, type Sort } from "../components/QuestionCard";
+import { type Outcome, QuestionCard } from "../components/QuestionCard";
 import { type Learner, useLearner } from "../data/learner";
+import { useT } from "../i18n";
 
 const MODES = ["train", "weak"] as const;
 type QuizMode = (typeof MODES)[number];
@@ -26,23 +27,13 @@ const RETRY_GAP = 4;
 /** A streak toast every this many right answers in a row. */
 const STREAK_STEP = 5;
 
-const EMPTY: Record<QuizMode, string> = {
-  train: "Every question is marked easy or disabled. Nothing left to practise.",
-  weak: "No weak spots right now. Nice.",
-};
-
-const TOAST: Record<Sort, string> = {
-  hard: "Hard · you'll see it more",
-  next: "",
-  easy: "Easy · retired",
-};
-
 export function QuizPage() {
+  const t = useT();
   const { mode: raw } = useParams();
   // Sweep was folded into Train; keep old links working.
   if (raw === "sweep") return <Navigate to="/quiz/train" replace />;
   const mode = MODES.find((m) => m === raw);
-  if (!mode) return <Alert color="red">Unknown mode.</Alert>;
+  if (!mode) return <Alert color="red">{t.quiz.unknownMode}</Alert>;
   return <Quiz key={mode} mode={mode} />;
 }
 
@@ -71,6 +62,7 @@ function pickTrain(L: Learner, run: readonly RunEntry[]): string | undefined {
 }
 
 function Quiz({ mode }: { mode: QuizMode }) {
+  const t = useT();
   const L = useLearner();
   /** Questions in the order they are shown. For Train it grows by one per answer. */
   const [queue, setQueue] = useState<string[] | null>(null);
@@ -102,9 +94,8 @@ function Quiz({ mode }: { mode: QuizMode }) {
 
   if (L.noBank) {
     return (
-      <Alert color="yellow" title="No question bank">
-        The server has no bank and this device has none cached. Run the import (see the README) and
-        reload.
+      <Alert color="yellow" title={t.quiz.noBank.title}>
+        {t.quiz.noBank.body}
       </Alert>
     );
   }
@@ -139,8 +130,8 @@ function Quiz({ mode }: { mode: QuizMode }) {
     setQueue(q);
     setStep(step + 1);
 
-    if (o.correct && s > 0 && s % STREAK_STEP === 0) flash(`${s} in a row. Keep going`);
-    else flash(TOAST[o.sort]);
+    if (o.correct && s > 0 && s % STREAK_STEP === 0) flash(t.quiz.streakToast(s));
+    else flash(o.sort === "hard" ? t.quiz.toast.hard : o.sort === "easy" ? t.quiz.toast.easy : "");
   };
 
   if (stopped || exhausted || step >= queue.length) {
@@ -156,7 +147,7 @@ function Quiz({ mode }: { mode: QuizMode }) {
   }
 
   const q = L.byId.get(queue[step] as string);
-  if (!q) return <Alert color="red">Question {queue[step]} is missing from the bank.</Alert>;
+  if (!q) return <Alert color="red">{t.quiz.missingQuestion(queue[step] as string)}</Alert>;
 
   const tally = countSorts(results);
 
@@ -169,14 +160,14 @@ function Quiz({ mode }: { mode: QuizMode }) {
           color="red"
           size="md"
           radius="md"
-          aria-label="Stop run"
+          aria-label={t.quiz.stop}
           onClick={() => setStopped(true)}
           data-testid="stop"
         >
           <IconPlayerStopFilled size={14} />
         </ActionIcon>
         <Box style={{ flex: 1 }} />
-        <Group gap={6} wrap="nowrap" aria-label="Sorted this run" data-testid="run-count">
+        <Group gap={6} wrap="nowrap" aria-label={t.quiz.sortedThisRun} data-testid="run-count">
           <Text size="xs" fw={800} c="orange.7">
             {tally.hard}
           </Text>
@@ -193,7 +184,7 @@ function Quiz({ mode }: { mode: QuizMode }) {
           variant={streak >= STREAK_STEP ? "filled" : "light"}
           c={streak >= STREAK_STEP ? "dark.9" : undefined}
           leftSection={<IconBolt size={12} />}
-          aria-label={`${streak} in a row`}
+          aria-label={t.quiz.streakAria(streak)}
           data-testid="streak"
         >
           {streak}
@@ -263,14 +254,15 @@ function RunSummary({
   exhausted: boolean;
   resume?: () => void;
 }) {
+  const t = useT();
   if (results.length === 0) {
     return (
       <Paper withBorder p="lg" radius="md">
         <Stack gap="md" align="center" ta="center">
-          <Title order={3}>All clear</Title>
-          <Text c="dimmed">{EMPTY[mode]}</Text>
+          <Title order={3}>{t.quiz.summary.allClear}</Title>
+          <Text c="dimmed">{t.quiz.empty[mode]}</Text>
           <Button component={Link} to="/" variant="default" leftSection={<IconHome size={18} />}>
-            Home
+            {t.quiz.summary.home}
           </Button>
         </Stack>
       </Paper>
@@ -279,31 +271,49 @@ function RunSummary({
 
   const right = results.filter((r) => r.correct).length;
   const avg = results.reduce((a, r) => a + r.durationMs, 0) / results.length / 1000;
-  const t = countSorts(results);
+  const tally = countSorts(results);
   const piles = [
-    { label: "Hard", n: t.hard, color: "orange", what: "Comes back more often." },
-    { label: "Guessed", n: t.guessed, color: "grape", what: "Right, but luck. Graded as hard." },
-    { label: "Next", n: t.next, color: "blue", what: "Stays on the even rotation." },
-    { label: "Easy", n: t.easy, color: "teal", what: "Retired. Won't show again." },
+    {
+      label: t.quiz.summary.piles.hard.label,
+      n: tally.hard,
+      color: "orange",
+      what: t.quiz.summary.piles.hard.what,
+    },
+    {
+      label: t.quiz.summary.piles.guessed.label,
+      n: tally.guessed,
+      color: "grape",
+      what: t.quiz.summary.piles.guessed.what,
+    },
+    {
+      label: t.quiz.summary.piles.next.label,
+      n: tally.next,
+      color: "blue",
+      what: t.quiz.summary.piles.next.what,
+    },
+    {
+      label: t.quiz.summary.piles.easy.label,
+      n: tally.easy,
+      color: "teal",
+      what: t.quiz.summary.piles.easy.what,
+    },
   ];
 
   return (
     <Stack gap="lg">
       <Stack gap={4}>
         <Text c="dimmed" fw={600} size="sm">
-          {exhausted ? "Nothing left to practise" : "You stopped the run"}
+          {exhausted ? t.quiz.summary.exhausted : t.quiz.summary.stopped}
         </Text>
         <Group gap="xs" align="baseline">
           <Text fz={44} fw={800} lh={1} data-testid="summary">
             {results.length}
           </Text>
-          <Text fw={600}>
-            answered · {right} right · {avg.toFixed(1)} s each
-          </Text>
+          <Text fw={600}>{t.quiz.summary.answered(results.length, right, avg.toFixed(1))}</Text>
         </Group>
         <Group gap="xs" mt={4}>
           <Badge size="lg" variant="light" color="yellow" leftSection={<IconBolt size={14} />}>
-            Best streak {best}
+            {t.quiz.summary.bestStreak(best)}
           </Badge>
         </Group>
       </Stack>
@@ -325,7 +335,7 @@ function RunSummary({
       </SimpleGrid>
 
       <Stack gap="xs">
-        {t.hard + t.guessed > 0 && (
+        {tally.hard + tally.guessed > 0 && (
           <Button
             component={Link}
             to="/quiz/weak"
@@ -334,7 +344,7 @@ function RunSummary({
             color="orange"
             leftSection={<IconBolt size={18} />}
           >
-            Drill weak spots
+            {t.quiz.summary.drillWeak}
           </Button>
         )}
         <Group grow gap="xs">
@@ -345,7 +355,7 @@ function RunSummary({
               leftSection={<IconPlayerPlay size={18} />}
               onClick={resume}
             >
-              Keep going
+              {t.quiz.summary.keepGoing}
             </Button>
           )}
           <Button
@@ -355,7 +365,7 @@ function RunSummary({
             variant="default"
             leftSection={<IconHome size={18} />}
           >
-            Home
+            {t.quiz.summary.home}
           </Button>
         </Group>
       </Stack>
