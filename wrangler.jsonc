@@ -3,7 +3,7 @@
   "name": "simata-next",
   "main": "apps/api/src/worker.ts",
   "compatibility_date": "2026-01-01",
-  "workers_dev": false,
+  "workers_dev": true,
   "routes": [{ "pattern": "simata.kapraran.dev", "custom_domain": true }],
   "vars": {
     // "open" = no login (one shared user). Switch to "access" once the Cloudflare Access
