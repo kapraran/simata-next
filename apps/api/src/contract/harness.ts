@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -9,15 +9,23 @@ import { FsBlobStore } from "../adapters/fs-blob";
 import { migrate, nodeSqlDb } from "../adapters/node-sqlite";
 import { R2BlobStore, type R2Like } from "../adapters/r2-blob";
 import { SqlEventStore, SqlKvStore } from "../adapters/sql";
+import { SqlSessionStore, SqlUserStore } from "../auth/store";
 
 export const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "../../migrations");
 
 /** Fresh in-memory SQLite with the real migrations applied. */
 export function sqliteStores() {
   const db = new DatabaseSync(":memory:");
+  db.exec("PRAGMA foreign_keys = ON");
   migrate(db, migrationsDir);
   const sql = nodeSqlDb(db);
-  return { events: new SqlEventStore(sql), kv: new SqlKvStore(sql), db };
+  return {
+    events: new SqlEventStore(sql),
+    kv: new SqlKvStore(sql),
+    users: new SqlUserStore(sql),
+    sessions: new SqlSessionStore(sql),
+    db,
+  };
 }
 
 export function tempFsBlobs() {
@@ -37,11 +45,16 @@ export async function miniflare() {
     exec(sql: string): Promise<unknown>;
   };
   // wrangler applies the same file with `d1 migrations apply`; here we run it statement by statement.
-  const statements = readFileSync(join(migrationsDir, "0001_init.sql"), "utf8")
-    .replace(/--.*$/gm, "")
-    .split(";")
-    .map((s) => s.replace(/\s+/g, " ").trim())
-    .filter(Boolean);
+  const statements = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort()
+    .flatMap((f) =>
+      readFileSync(join(migrationsDir, f), "utf8")
+        .replace(/--.*$/gm, "")
+        .split(";")
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter(Boolean),
+    );
   await d1.batch(statements.map((s) => d1.prepare(s)));
 
   const bucket = (await mf.getR2Bucket("MEDIA")) as unknown as R2Like;
@@ -49,6 +62,8 @@ export async function miniflare() {
   return {
     events: new SqlEventStore(sql),
     kv: new SqlKvStore(sql),
+    users: new SqlUserStore(sql),
+    sessions: new SqlSessionStore(sql),
     blobs: new R2BlobStore(bucket),
     dispose: () => mf.dispose(),
   };

@@ -56,8 +56,19 @@ Source: session 2026-11-07.
 - **Portable with Docker Compose.** The same app must also run from `docker-compose.yml` so it can move to any VM with no code change. Existing: `docker/Dockerfile` and `docker-compose.yml`. Status: needs checking that it covers the web app and API, not only the current setup.
 - **Single codebase, two targets.** Workers and Docker differ only in config (env vars, bindings, storage), not in app code. Storage differences must be behind one interface.
 - **Hosting target set.** Production is one Cloudflare Worker on the custom domain `simata.kapraran.dev` (Workers Static Assets for the SPA + `/api/*` on the same Worker), backed by D1 `simata-next` and R2 `simata-media`. Source: session 2026-11-07. Deployed and healthy.
-- **Auth is optional and config-switched, never removed.** Cloudflare Access is the intended login step: it authenticates the visitor and the Worker verifies the forwarded JWT (`Cf-Access-Jwt-Assertion`). For now it is **off** (`IDENTITY=open`, one shared user) to move faster; enable with `IDENTITY=access` plus `TEAM_DOMAIN`/`ACCESS_AUD`. The Access adapter stays in the code. Source: session 2026-11-07.
+- **Accounts are UUID keys, admin-created.** An admin creates an account and gets a one-time key. The keeper stores only `HMAC-SHA256(AUTH_PEPPER, key)`, never the key, and never the login key in the UI. The claim link carries the key in the URL fragment (`/claim#<key>`), which the browser strips after login. Lost link = `rotate` (new key, all sessions dropped). Source: session 2026-11-07.
 - **PWA is required**, not optional: `vite-plugin-pwa`, manifest with maskable icons, standalone display, auto-update service worker. Source: session 2026-11-07.
+
+## Accounts and access
+
+Source: session 2026-11-07.
+
+- **Multi-user, invite-only, portable.** Every account is a UUID login key. Admin creates accounts and hands out claim links; there is no signup. Works identically on Cloudflare and Docker. Detail: [PLAN-v2.md](PLAN-v2.md) §4 and the auth code in `apps/api/src/auth`.
+- **Keys are never stored or shown twice.** The keeper keeps only a peppered HMAC of the login key; a database leak exposes no logins. A lost key is rotated, not recovered.
+- **Admin is CLI-only.** `tools/admin` (`npm run admin -- create|list|rotate|disable|enable|delete`) talks to `/api/admin/*` with `ADMIN_TOKEN`. No admin UI.
+- **One account per device database.** The browser keeps `simata:<userId>` in IndexedDB, so two people sharing a tablet never mix events, cursors or a push queue. Signing out keeps the local data; "Remove from this device" deletes it.
+- **Sessions are server-side cookies.** 90-day sliding expiry, `HttpOnly` + `SameSite=Lax`, revoked by logout, rotation, disable or account deletion. A 401 from sync drops the app to the login screen.
+- **AUTH_PEPPER and ADMIN_TOKEN differ by host.** Cloudflare reads them from `wrangler secret`; Docker from `.env`. No pepper = the API refuses all auth rather than falling back to a shared user.
 
 ## Look and feel
 

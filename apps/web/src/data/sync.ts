@@ -22,6 +22,14 @@ type SyncResponse = {
   kv: ServerKv[];
 };
 
+/** The session is gone (cookie expired or revoked): stop retrying and let the app ask for a login. */
+class SessionExpired extends Error {
+  constructor() {
+    super("session expired");
+    this.name = "SessionExpired";
+  }
+}
+
 const PUSH_LIMIT = 500;
 const MAX_ROUNDS = 50;
 /** A whole sync run gives up after this, so a stuck run can't block the next attempt. */
@@ -67,23 +75,28 @@ export function syncNow(
     return running;
   }
   const controller = new AbortController();
-  const run = withDeadline(doSync(d, f, controller.signal), timeoutMs, () => {
-    const error = "sync timed out";
+  const timer = setTimeout(() => {
     controller.abort();
-    log("sync", "timed out; the next trigger starts a fresh run", { timeoutMs });
-    set({ ...current, state: "error", error });
-    return { ok: false, error } as const;
-  }).finally(() => inflight.delete(d));
+    log("sync", "timed out; the run stops at its next step", { timeoutMs });
+    set({ ...current, state: "error", error: "sync timed out" });
+  }, timeoutMs);
+  // Released only once the run has really finished, so two runs never touch the db at once.
+  const run = doSync(d, f, controller.signal).finally(() => {
+    clearTimeout(timer);
+    inflight.delete(d);
+  });
   inflight.set(d, run);
   return run;
 }
 
-function withDeadline<T>(p: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const deadline = new Promise<T>((resolve) => {
-    timer = setTimeout(() => resolve(onTimeout()), ms);
+/** Rejects as soon as `signal` aborts, even if `p` ignores the signal. */
+function untilAborted<T>(p: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const stop = () => reject(new DOMException("aborted", "AbortError"));
+    if (signal.aborted) return stop();
+    signal.addEventListener("abort", stop, { once: true });
+    p.then(resolve, reject).finally(() => signal.removeEventListener("abort", stop));
   });
-  return Promise.race([p, deadline]).finally(() => clearTimeout(timer));
 }
 
 async function doSync(d: SimataDb, f: typeof fetch, aborted: AbortSignal): Promise<SyncResult> {
@@ -95,6 +108,8 @@ async function doSync(d: SimataDb, f: typeof fetch, aborted: AbortSignal): Promi
   try {
     let drainedAt = writeCount;
     for (let round = 0; round < MAX_ROUNDS; round++) {
+      // A run past its deadline must stop here: the next run may already be writing.
+      if (aborted.aborted) break;
       const readStart = Date.now();
       // One read transaction for the whole round: fewer round trips to IndexedDB, and no
       // write can land between the four reads and change what is in `pending`.
@@ -118,17 +133,21 @@ async function doSync(d: SimataDb, f: typeof fetch, aborted: AbortSignal): Promi
         readMs: Date.now() - readStart,
       });
 
-      const res = await f("/api/sync", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        signal: AbortSignal.any([aborted, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
-        body: JSON.stringify({
-          cursor,
-          kvRev,
-          events: pending.map(strip),
-          kv: dirty.map(({ key, value, updatedAt }) => ({ key, value, updatedAt })),
+      const res = await untilAborted(
+        f("/api/sync", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          signal: AbortSignal.any([aborted, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
+          body: JSON.stringify({
+            cursor,
+            kvRev,
+            events: pending.map(strip),
+            kv: dirty.map(({ key, value, updatedAt }) => ({ key, value, updatedAt })),
+          }),
         }),
-      });
+        aborted,
+      );
+      if (res.status === 401) throw new SessionExpired();
       if (!res.ok) throw new Error(`sync failed: ${res.status}`);
       const data = (await res.json()) as SyncResponse;
       log("sync", `round ${round} response`, {
@@ -138,6 +157,7 @@ async function doSync(d: SimataDb, f: typeof fetch, aborted: AbortSignal): Promi
         hasMore: data.hasMore,
       });
 
+      if (aborted.aborted) break;
       const applyStart = Date.now();
       const pushedIds = new Set(pending.map((e) => e.id));
       await d.transaction("rw", d.events, d.kv, d.meta, async () => {
@@ -191,6 +211,14 @@ async function doSync(d: SimataDb, f: typeof fetch, aborted: AbortSignal): Promi
   } catch (e) {
     // The deadline already reported this run; a late error must not overwrite the next run's state.
     if (aborted.aborted) return { ok: false, error: "sync timed out" };
+    if (e instanceof SessionExpired) {
+      log("sync", "session expired");
+      set({ state: "error", error: "session expired" });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("simata:session-expired"));
+      }
+      return { ok: false, error: "session expired" };
+    }
     const error = e instanceof Error ? e.message : String(e);
     log("sync", "failed", { error, ms: Date.now() - started });
     set({ ...current, state: "error", error });

@@ -7,12 +7,14 @@ import {
   Stack,
   Switch,
   Text,
+  TextInput,
   Title,
   useMantineColorScheme,
 } from "@mantine/core";
-import { IconCopy, IconRefresh } from "@tabler/icons-react";
+import { IconCopy, IconLogout, IconRefresh, IconTrash } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { db, getMeta } from "../data/db";
+import { useAuth } from "../data/auth";
+import { deleteDb, getMeta } from "../data/db";
 import { useLearner, useSyncState } from "../data/learner";
 import { clearLog, formatLog, log, logCount } from "../data/log";
 import { syncNow } from "../data/sync";
@@ -26,16 +28,19 @@ export function SettingsPage() {
   const t = useT();
   const { pref, setLang } = useI18n();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const { settings, pendingCount } = useLearner();
+  const { settings, pendingCount, db } = useLearner();
+  const { user, setName, logout } = useAuth();
   const sync = useSyncState();
   const [deviceId, setDeviceId] = useState("");
   const [entries, setEntries] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [name, setNameInput] = useState(user?.name ?? "");
+  const [savedName, setSavedName] = useState(user?.name ?? "");
 
   useEffect(() => {
     void getMeta(db, "deviceId", "").then(setDeviceId);
     setEntries(logCount());
-  }, []);
+  }, [db]);
 
   const copyLog = async () => {
     await navigator.clipboard.writeText(formatLog());
@@ -52,9 +57,61 @@ export function SettingsPage() {
   const update = (patch: Partial<typeof settings>) =>
     void saveSettings(db, { ...settings, ...patch });
 
+  const saveName = async () => {
+    const trimmed = name.trim();
+    await setName(trimmed);
+    setSavedName(trimmed);
+  };
+
+  const removeFromDevice = async () => {
+    if (!user) return;
+    if (!confirm(t.settings.removeConfirm)) return;
+    await logout();
+    await deleteDb(user.id);
+  };
+
   return (
     <Stack gap="lg">
       <Title order={2}>{t.settings.title}</Title>
+
+      <Paper withBorder p="md" radius="md">
+        <Stack gap="md">
+          <Text fw={600}>{t.settings.account}</Text>
+          <TextInput
+            label={t.settings.displayName}
+            placeholder={t.settings.displayNamePlaceholder}
+            value={name}
+            onChange={(e) => setNameInput(e.currentTarget.value)}
+            maxLength={60}
+            rightSection={
+              <Button
+                size="compact-xs"
+                variant="light"
+                disabled={name.trim() === savedName}
+                onClick={() => void saveName()}
+              >
+                {t.settings.save}
+              </Button>
+            }
+            rightSectionWidth={70}
+          />
+          <Group justify="space-between">
+            <Text size="xs" c="dimmed">
+              {t.settings.accountId(user?.id ?? "")}
+            </Text>
+            <Button
+              size="xs"
+              variant="subtle"
+              color="gray"
+              leftSection={<IconLogout size={16} />}
+              onClick={() => void logout()}
+            >
+              {t.settings.signOut}
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
+
       <Paper withBorder p="md" radius="md">
         <Stack gap="md">
           <Select
@@ -130,6 +187,26 @@ export function SettingsPage() {
             </Button>
             <Button size="xs" variant="subtle" color="gray" onClick={wipeLog}>
               {t.settings.clearLog}
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
+
+      <Paper withBorder p="md" radius="md">
+        <Stack gap="xs">
+          <Text fw={600}>{t.settings.dangerZone}</Text>
+          <Text size="sm" c="dimmed">
+            {t.settings.removeHint}
+          </Text>
+          <Group>
+            <Button
+              size="xs"
+              variant="light"
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              onClick={() => void removeFromDevice()}
+            >
+              {t.settings.removeFromDevice}
             </Button>
           </Group>
         </Stack>

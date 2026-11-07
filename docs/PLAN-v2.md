@@ -135,10 +135,10 @@ How an answer becomes an FSRS grade (this mapping lives in `core`, is tunable, a
        │ POST /api/sync  (push outbox, pull events after cursor)
        │ GET  /api/bank/:version  · GET /api/media/:key
  ┌─────▼──────────── Hono app: createApp(ports) ───────────────────┐
- │  ports: EventStore · KvStore · BlobStore · Identity · Clock     │
+ │  ports: EventStore · KvStore · BlobStore · UserStore · SessionStore · Clock │
  └─────┬───────────────────────────────┬───────────────────────────┘
    Cloudflare Worker               Node (Docker)
-   D1 · R2 · Access JWT            SQLite file · /data/media volume · "local" user
+   D1 · R2 · secrets               SQLite file · /data/media volume · .env
 ```
 
 - **Answers are an append-only log.** Each event `{id: ULID, questionId, optionText, correct, durationMs, guessed, mode, at, deviceId}` is written to IndexedDB first and synced later.
@@ -152,7 +152,7 @@ How an answer becomes an FSRS grade (this mapping lives in `core`, is tunable, a
 | --- | --- | --- |
 | `EventStore`, `KvStore` (settings, notes) | One SQL implementation over D1 | The same implementation over `node:sqlite` (same migration file) |
 | `BlobStore` (bank JSON, images) | R2 binding | folder on a volume |
-| `Identity` | Cloudflare Access JWT (`Cf-Access-Jwt-Assertion`, verified) → email | fixed `local` user, or a header set in `.env` |
+| `UserStore`, `SessionStore` | One SQL implementation over D1 | The same implementation over `node:sqlite` (same migration file) |
 | `Clock` | `Date.now` | `Date.now`; fake clock in tests |
 
 The same **contract test suite** runs against both adapter sets (SQLite directly, D1 through Miniflare). If both pass, the abstraction is real.
@@ -345,3 +345,6 @@ Everything else has a default above. These change what gets built:
 - **Events are inserted 11 per statement.** D1 allows 100 bound parameters per statement; one statement per event made a 250-event sync take 9 s in Miniflare.
 - **"Retired" is measured by FSRS stability of 14+ days**, not by "next review is more than 14 days out", which depends on when you last happened to review a card.
 - **Old Cloudflare resources are never modified.** v2 will use its own new D1 database and R2 bucket (§7.0).
+- **Multi-user via UUID account keys, not Cloudflare Access.** Auth is our own: `users` + `sessions` tables, a peppered HMAC of each login key, server-side cookie sessions, and a token-guarded `/api/admin/*` driven by `tools/admin`. The `Identity` port and the Access adapter were deleted; every user store now takes a `userId` from the session. Works identically on Workers and Docker.
+- **Storage is namespaced per account in the browser** (`simata:<userId>` in IndexedDB) so a shared device can't cross-contaminate, and the pre-multi-user `simata` database is deleted once on first load.
+- **The schema is squashed to one `0001_init.sql`** (users, sessions, events, kv). WIP dev: local resets by deleting `data/simata.db*`; the cloud D1 drops its tables and `d1_migrations` before `npm run db:migrate:remote`. Deploy needs `wrangler secret put AUTH_PEPPER` and `... ADMIN_TOKEN`.

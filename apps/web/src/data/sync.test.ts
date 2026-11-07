@@ -175,6 +175,19 @@ describe("syncNow", () => {
     expect(await syncNow(d, server.fetchImpl)).toMatchObject({ ok: true, pushed: 1 });
   });
 
+  it("an abandoned run does not write when its late response arrives", async () => {
+    const d = fresh();
+    await answer(d);
+    const late = (async (url: string, init: RequestInit) => {
+      await new Promise((r) => setTimeout(r, 80));
+      return server.fetchImpl(url, init);
+    }) as unknown as typeof fetch;
+    expect(await syncNow(d, late, 20)).toMatchObject({ ok: false });
+    await new Promise((r) => setTimeout(r, 120));
+    expect(await d.events.where("pending").equals(1).count()).toBe(1);
+    expect(await getMeta(d, "cursor", 0)).toBe(0);
+  });
+
   it("a timed-out run cannot overwrite the state of the next run", async () => {
     const d = fresh();
     await answer(d);

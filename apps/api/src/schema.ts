@@ -27,3 +27,16 @@ export const syncRequest = z.object({
 });
 
 export type SyncRequest = z.infer<typeof syncRequest>;
+
+/** Login with a login key (UUID-shaped, but any 32 hex digits are accepted). */
+export const loginRequest = z.object({
+  key: z.string().min(8).max(100),
+});
+
+export const nameRequest = z.object({
+  name: z.string().max(60),
+});
+
+export const createUserRequest = z.object({
+  name: z.string().max(60).default(""),
+});

@@ -5,13 +5,8 @@
   "compatibility_date": "2026-01-01",
   "workers_dev": true,
   "routes": [{ "pattern": "simata.kapraran.dev", "custom_domain": true }],
-  "vars": {
-    // "open" = no login (one shared user). Switch to "access" once the Cloudflare Access
-    // application exists and TEAM_DOMAIN + ACCESS_AUD are set below.
-    "IDENTITY": "open",
-    "TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
-  },
+  // Auth secrets are NOT here: local `wrangler dev` reads them from .dev.vars, production from
+  // `wrangler secret put AUTH_PEPPER` / `ADMIN_TOKEN`. No pepper means the API refuses all auth.
   "d1_databases": [
     {
       "binding": "DB",

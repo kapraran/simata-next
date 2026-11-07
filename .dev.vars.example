@@ -1,5 +1,9 @@
 # Cloudflare Worker (`wrangler dev` / `wrangler deploy`). Copy to .dev.vars for local runs.
-# IDENTITY: "open" (no login, shared user) or "access" (Cloudflare Access JWT).
-IDENTITY=open
-TEAM_DOMAIN=
-ACCESS_AUD=
+# Production sets these with `wrangler secret put AUTH_PEPPER` and `... ADMIN_TOKEN`.
+
+# HMAC pepper used to hash login keys and session tokens. Changing it invalidates every key.
+# Generate one: node -e "console.log(crypto.randomUUID()+crypto.randomUUID())"
+AUTH_PEPPER=dev-pepper-change-me
+
+# Bearer token for the admin API (the `tools/admin` CLI). Leave empty to disable the admin API.
+ADMIN_TOKEN=dev-admin

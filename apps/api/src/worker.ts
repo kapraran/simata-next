@@ -1,16 +1,17 @@
 import { type D1Like, d1SqlDb } from "./adapters/d1";
-import { identityFromEnv } from "./adapters/identity";
-import { type R2Like, R2BlobStore } from "./adapters/r2-blob";
+import { R2BlobStore, type R2Like } from "./adapters/r2-blob";
 import { SqlEventStore, SqlKvStore } from "./adapters/sql";
 import { createApp } from "./app";
+import { SqlSessionStore, SqlUserStore } from "./auth/store";
 
-/** Bindings + vars provided by wrangler.jsonc. */
+/** Bindings + vars provided by wrangler.jsonc. Secrets are set with `wrangler secret put`. */
 export type Env = {
   DB: D1Like;
   MEDIA: R2Like;
-  IDENTITY?: string;
-  TEAM_DOMAIN?: string;
-  ACCESS_AUD?: string;
+  /** HMAC pepper for hashing login keys and session tokens. Required. */
+  AUTH_PEPPER?: string;
+  /** Bearer token for the admin API. Unset = admin disabled. */
+  ADMIN_TOKEN?: string;
   /** Workers Static Assets binding (serves the built web app). */
   ASSETS?: { fetch(request: Request): Promise<Response> };
 };
@@ -27,7 +28,10 @@ function appFor(env: Env) {
       events: new SqlEventStore(sql),
       kv: new SqlKvStore(sql),
       blobs: new R2BlobStore(env.MEDIA),
-      identity: identityFromEnv(env),
+      users: new SqlUserStore(sql),
+      sessions: new SqlSessionStore(sql),
+      pepper: env.AUTH_PEPPER ?? "",
+      adminToken: env.ADMIN_TOKEN ?? "",
     });
     apps.set(env, app);
   }

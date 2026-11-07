@@ -1,6 +1,9 @@
 import { healthStatus } from "@simata/core";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { registerAdminRoutes } from "./auth/admin";
+import { registerAuthRoutes } from "./auth/routes";
+import { currentUserId } from "./auth/session";
 import type { Ports } from "./ports";
 import { syncRequest } from "./schema";
 
@@ -15,20 +18,28 @@ function bytes(body: Uint8Array, headers: Record<string, string>) {
 
 const IMMUTABLE = "public, max-age=31536000, immutable";
 
-// The app only knows ports. Each entrypoint (node.ts, later worker.ts) wires concrete adapters.
+/** Public routes: no session, no admin token. Everything else under /api needs one or the other. */
+function isPublic(path: string): boolean {
+  return path === "/api/health" || path.startsWith("/api/auth/") || path.startsWith("/api/admin/");
+}
+
+// The app only knows ports. Each entrypoint (node.ts, worker.ts) wires concrete adapters.
 export function createApp(ports: Ports) {
   const app = new Hono<{ Variables: { userId: string } }>();
 
   app.get("/api/health", (c) => c.json(healthStatus("api", ports.clock())));
 
-  // Everything below needs an identity. The question bank is third-party content, so it is
-  // not public either.
+  // Session gate for the data routes. Public auth and the token-guarded admin API are exempt.
   app.use("/api/*", async (c, next) => {
-    const userId = await ports.identity.resolve(c.req.raw);
+    if (isPublic(c.req.path)) return next();
+    const userId = await currentUserId(ports, c);
     if (!userId) return c.json({ error: "unauthorized" }, 401);
     c.set("userId", userId);
     await next();
   });
+
+  registerAuthRoutes(app, ports);
+  registerAdminRoutes(app, ports);
 
   /** Current bank. Cheap to poll: answers 304 when the client already has this version. */
   app.get("/api/bank", async (c) => {

@@ -29,7 +29,7 @@ import {
 } from "@tabler/icons-react";
 import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { imageUrl } from "../data/bank";
-import { db } from "../data/db";
+import { useLearner } from "../data/learner";
 import { recordAnswer, setFlag, setNote } from "../data/writes";
 import { useT } from "../i18n";
 import { type Sort, swipeDirection } from "../lib/swipe";
@@ -71,6 +71,7 @@ const STAMP: Record<Sort, { color: string }> = {
 
 export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNext }: Props) {
   const t = useT();
+  const { db } = useLearner();
   const reduceMotion = useReducedMotion();
   const options = useMemo(() => shuffle(q.options, Math.random), [q]);
   const shownAt = useRef(Date.now());

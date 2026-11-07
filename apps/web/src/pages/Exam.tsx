@@ -25,7 +25,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Sign } from "../components/Signs";
 import { imageUrl } from "../data/bank";
-import { db } from "../data/db";
 import { useLearner } from "../data/learner";
 import { recordAnswer, saveExam } from "../data/writes";
 import { useT } from "../i18n";
@@ -82,7 +81,7 @@ export function ExamPage() {
     if (!ids || finishedAt === null || saved.current) return;
     saved.current = true;
     const right = answers.filter((a) => a.correct).length;
-    void saveExam(db, {
+    void saveExam(L.db, {
       at: startedAt,
       right,
       total: ids.length,
@@ -90,7 +89,7 @@ export function ExamPage() {
       passed: ids.length - right <= DEFAULT_RULE.maxWrong,
       durationMs: Math.min(finishedAt - startedAt, EXAM_MS),
     });
-  }, [ids, finishedAt, answers, startedAt]);
+  }, [ids, finishedAt, answers, startedAt, L.db]);
 
   if (L.noBank) return <Alert color="yellow">{t.exam.noBank}</Alert>;
   if (!L.ready) return <Loader />;
@@ -221,6 +220,7 @@ function ExamQuestion({
   onAnswer: (a: Answer) => void;
 }) {
   const t = useT();
+  const L = useLearner();
   const options = useMemo(() => shuffle(q.options, Math.random), [q]);
   const shownAt = useRef(Date.now());
   const [picked, setPicked] = useState<string | null>(null);
@@ -229,7 +229,7 @@ function ExamQuestion({
     if (picked !== null) return;
     setPicked(text);
     const correct = q.options.find((o) => o.text === text)?.correct === true;
-    void recordAnswer(db, {
+    void recordAnswer(L.db, {
       questionId: q.id,
       correct,
       durationMs: Date.now() - shownAt.current,

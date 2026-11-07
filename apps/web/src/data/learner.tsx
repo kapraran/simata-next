@@ -10,13 +10,15 @@ import {
   useSyncExternalStore,
 } from "react";
 import { cachedBank, refreshBank } from "./bank";
-import { db, type LocalEvent } from "./db";
+import type { LocalEvent, SimataDb } from "./db";
 import { type ExamResult, parseExam } from "./exams";
 import { log } from "./log";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings";
 import { type SyncState, syncNow, syncStore } from "./sync";
 
 export type Learner = {
+  /** The account's local database. */
+  db: SimataDb;
   /** False until the bank, events and settings have been read from this device. */
   ready: boolean;
   bank: Bank | null;
@@ -55,7 +57,7 @@ async function timedRead<T extends unknown[]>(name: string, read: () => Promise<
   return rows;
 }
 
-export function LearnerProvider({ children }: { children: ReactNode }) {
+export function LearnerProvider({ db, children }: { db: SimataDb; children: ReactNode }) {
   const [bank, setBank] = useState<Bank | null>(null);
   const [bankLoaded, setBankLoaded] = useState(false);
 
@@ -74,7 +76,7 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [db]);
 
   // Keep devices in step: on start, when we come back online or into view, and every minute.
   useEffect(() => {
@@ -94,10 +96,10 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", onVisible);
       clearInterval(timer);
     };
-  }, []);
+  }, [db]);
 
-  const events = useLiveQuery(() => timedRead("events", () => db.events.toArray()), []);
-  const kvRows = useLiveQuery(() => timedRead("kv", () => db.kv.toArray()), []);
+  const events = useLiveQuery(() => timedRead("events", () => db.events.toArray()), [db]);
+  const kvRows = useLiveQuery(() => timedRead("kv", () => db.kv.toArray()), [db]);
 
   const progress = useMemo(() => foldEvents(events ?? []), [events]);
   const pendingCount = useMemo(
@@ -132,6 +134,7 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
   }, [ready, bank, bankLoaded]);
 
   const value: Learner = {
+    db,
     ready,
     bank,
     noBank: bankLoaded && bank === null,
