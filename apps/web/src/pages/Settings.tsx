@@ -10,10 +10,11 @@ import {
   Title,
   useMantineColorScheme,
 } from "@mantine/core";
-import { IconRefresh } from "@tabler/icons-react";
+import { IconCopy, IconRefresh } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { db, getMeta } from "../data/db";
 import { useLearner, useSyncState } from "../data/learner";
+import { clearLog, formatLog, log, logCount } from "../data/log";
 import { syncNow } from "../data/sync";
 import { saveSettings } from "../data/writes";
 import { LANGS, type Lang, type LangPref, useI18n, useT } from "../i18n";
@@ -28,10 +29,25 @@ export function SettingsPage() {
   const { settings, pendingCount } = useLearner();
   const sync = useSyncState();
   const [deviceId, setDeviceId] = useState("");
+  const [entries, setEntries] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     void getMeta(db, "deviceId", "").then(setDeviceId);
+    setEntries(logCount());
   }, []);
+
+  const copyLog = async () => {
+    await navigator.clipboard.writeText(formatLog());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const wipeLog = () => {
+    clearLog();
+    log("app", "log cleared");
+    setEntries(logCount());
+  };
 
   const update = (patch: Partial<typeof settings>) =>
     void saveSettings(db, { ...settings, ...patch });
@@ -94,6 +110,28 @@ export function SettingsPage() {
           <Text size="xs" c="dimmed">
             {t.settings.device(deviceId || t.settings.deviceUnused)}
           </Text>
+        </Stack>
+      </Paper>
+
+      <Paper withBorder p="md" radius="md">
+        <Stack gap="xs">
+          <Text fw={600}>{t.settings.diagnostics}</Text>
+          <Text size="sm" c="dimmed">
+            {t.settings.diagnosticsHint(entries)}
+          </Text>
+          <Group>
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconCopy size={16} />}
+              onClick={() => void copyLog()}
+            >
+              {copied ? t.settings.copied : t.settings.copyLog}
+            </Button>
+            <Button size="xs" variant="subtle" color="gray" onClick={wipeLog}>
+              {t.settings.clearLog}
+            </Button>
+          </Group>
         </Stack>
       </Paper>
     </Stack>

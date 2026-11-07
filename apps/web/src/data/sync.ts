@@ -1,5 +1,6 @@
 import type { AnswerEvent } from "@simata/core";
 import { getMeta, type LocalEvent, type SimataDb, setMeta } from "./db";
+import { log } from "./log";
 
 export type SyncState = {
   state: "idle" | "syncing" | "error";
@@ -52,7 +53,10 @@ function strip(e: LocalEvent): AnswerEvent {
  */
 export function syncNow(d: SimataDb, f: typeof fetch = fetch): Promise<SyncResult> {
   const running = inflight.get(d);
-  if (running) return running;
+  if (running) {
+    log("sync", "joined a sync already running");
+    return running;
+  }
   const run = doSync(d, f).finally(() => inflight.delete(d));
   inflight.set(d, run);
   return run;
@@ -62,12 +66,20 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
   set({ ...current, state: "syncing" });
   let pushed = 0;
   let pulled = 0;
+  const started = Date.now();
+  log("sync", "start");
   try {
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const cursor = await getMeta(d, "cursor", 0);
       const kvRev = await getMeta(d, "kvRev", 0);
       const pending = await d.events.where("pending").equals(1).limit(PUSH_LIMIT).toArray();
       const dirty = await d.kv.where("dirty").equals(1).toArray();
+      log("sync", `round ${round} request`, {
+        cursor,
+        kvRev,
+        pushEvents: pending.length,
+        pushKv: dirty.length,
+      });
 
       const res = await f("/api/sync", {
         method: "POST",
@@ -81,6 +93,12 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
       });
       if (!res.ok) throw new Error(`sync failed: ${res.status}`);
       const data = (await res.json()) as SyncResponse;
+      log("sync", `round ${round} response`, {
+        pulledEvents: data.events.length,
+        pulledKv: data.kv.length,
+        cursor: data.cursor,
+        hasMore: data.hasMore,
+      });
 
       await d.transaction("rw", d.events, d.kv, d.meta, async () => {
         // What we pushed is now on the server.
@@ -113,9 +131,11 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
       if (!data.hasMore && pending.length < PUSH_LIMIT) break;
     }
     set({ state: "idle", lastOkAt: Date.now() });
+    log("sync", "done", { pushed, pulled, ms: Date.now() - started });
     return { ok: true, pushed, pulled };
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
+    log("sync", "failed", { error, ms: Date.now() - started });
     set({ ...current, state: "error", error });
     return { ok: false, error };
   }

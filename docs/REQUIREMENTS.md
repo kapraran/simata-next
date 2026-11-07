@@ -76,6 +76,12 @@ Source: session 2026-11-07.
 - **Language and theme are device preferences, not synced settings.** They are stored in `localStorage`, so a phone and a desktop can differ. Theme is Mantine's `auto | light | dark` (auto = system).
 - **Both are selectable in Settings.** Settings shows a Language select (System / English / Ελληνικά) and a Theme select (System / Light / Dark) above the auto-advance switch. Choosing System for language goes back to following the device.
 
+## Diagnostics
+
+Source: session 2026-11-07.
+
+- **The app keeps a log the learner can copy and share.** Settings has a Diagnostics panel with Copy log and Clear. The log records sync and bank requests and responses, failures, uncaught errors and online/offline changes. It lives in `localStorage` (`simata:log`, last 400 entries) so it still works when IndexedDB is the problem. Written by `apps/web/src/data/log.ts`.
+
 ## Working style (for the agent)
 
 Source: session 2026-11-06.

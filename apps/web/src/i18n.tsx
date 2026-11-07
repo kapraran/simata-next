@@ -157,6 +157,12 @@ const en = {
     lastSynced: (time: string) => ` Last synced ${time}.`,
     device: (id: string) => `This device: ${id}`,
     deviceUnused: "(not used yet)",
+    diagnostics: "Diagnostics",
+    diagnosticsHint: (n: number) =>
+      `${n} log ${n === 1 ? "entry" : "entries"} on this device. Copy them and send them to share what went wrong.`,
+    copyLog: "Copy log",
+    copied: "Copied",
+    clearLog: "Clear",
   },
   question: {
     stamp: { hard: "HARD", next: "NEXT", easy: "EASY" },
@@ -327,6 +333,12 @@ const el: Messages = {
     lastSynced: (time) => ` Τελευταίος συγχρονισμός ${time}.`,
     device: (id) => `Αυτή η συσκευή: ${id}`,
     deviceUnused: "(δεν έχει χρησιμοποιηθεί ακόμη)",
+    diagnostics: "Διαγνωστικά",
+    diagnosticsHint: (n) =>
+      `${n} ${n === 1 ? "εγγραφή" : "εγγραφές"} καταγραφής σε αυτή τη συσκευή. Αντίγραψέ τες και στείλε τες για να μοιραστείς τι πήγε στραβά.`,
+    copyLog: "Αντιγραφή καταγραφής",
+    copied: "Αντιγράφηκε",
+    clearLog: "Καθαρισμός",
   },
   question: {
     stamp: { hard: "ΔΥΣΚΟΛΟ", next: "ΕΠΟΜΕΝΟ", easy: "ΕΥΚΟΛΟ" },
