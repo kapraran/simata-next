@@ -20,15 +20,10 @@ import {
   type Question,
   shuffle,
 } from "@simata/core";
-import {
-  IconClipboardCheck,
-  IconHome,
-  IconPhotoOff,
-  IconPlayerPlay,
-  IconRepeat,
-} from "@tabler/icons-react";
+import { IconHome, IconPhotoOff, IconPlayerPlay, IconRepeat } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Sign } from "../components/Signs";
 import { imageUrl } from "../data/bank";
 import { db } from "../data/db";
 import { useLearner } from "../data/learner";
@@ -62,7 +57,6 @@ export function ExamPage() {
         now,
         mode: "exam",
         size: DEFAULT_RULE.questions,
-        newBudget: 0,
         rng: mulberry32(now),
       }),
     );
@@ -116,7 +110,12 @@ export function ExamPage() {
         <Text fw={600} data-testid="exam-position">
           Question {index + 1} of {ids.length}
         </Text>
-        <Badge size="lg" color={remaining < 5 * 60_000 ? "red" : "gray"} variant="light">
+        <Badge
+          size="lg"
+          color={remaining < 5 * 60_000 ? "red" : "gray"}
+          variant="light"
+          leftSection={<TrafficLight remaining={remaining} />}
+        >
           {clock(remaining)}
         </Badge>
       </Group>
@@ -131,10 +130,61 @@ export function ExamPage() {
   );
 }
 
+/** Three lamps: green with plenty of time, amber under 15 minutes, red under 5. */
+function TrafficLight({ remaining }: { remaining: number }) {
+  const lit = remaining < 5 * 60_000 ? 2 : remaining < 15 * 60_000 ? 1 : 0;
+  const colors = ["#3FE08A", "#FFB020", "#FF4D4D"];
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-flex",
+        gap: 3,
+        background: "var(--sim-navy)",
+        padding: "3px 5px",
+        borderRadius: 8,
+      }}
+    >
+      {colors.map((c, i) => (
+        <i
+          key={c}
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: "50%",
+            background: i === lit ? c : "#2F3B5E",
+            boxShadow: i === lit ? `0 0 6px ${c}` : undefined,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** A big sticker for the result: a green check sign for a pass, a stop sign for a fail. */
+function ResultSign({ passed }: { passed: boolean }) {
+  if (!passed) return <Sign name="stop" size={112} />;
+  return (
+    <svg width="112" height="116" viewBox="0 0 120 124" aria-hidden="true">
+      <circle cx="60" cy="64" r="56" fill="#0B2A6B" />
+      <circle cx="60" cy="60" r="56" fill="#fff" />
+      <circle cx="60" cy="60" r="47" fill="#17A862" />
+      <path
+        d="M38 61 l15 15 l30 -31"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="11"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function Intro({ onStart }: { onStart: () => void }) {
   const L = useLearner();
   return (
-    <Paper withBorder p="lg" radius="md">
+    <Paper p="lg" radius="lg">
       <Stack gap="md">
         <Title order={3}>Mock exam</Title>
         <Text>
@@ -281,12 +331,13 @@ function Result({
 
   return (
     <Stack gap="md">
-      <Paper withBorder p="lg" radius="md">
+      <Paper p="lg" radius="lg">
         <Stack align="center" gap="xs" ta="center">
-          <IconClipboardCheck size={36} />
+          <ResultSign passed={passed} />
           <Title order={2} c={passed ? "green" : "red"} data-testid="exam-verdict">
             {passed ? "Passed" : "Not passed"}
           </Title>
+          <span className="sim-swoosh" style={{ width: 120 }} />
           <Text data-testid="exam-score">
             {right} of {ids.length} right
             {ids.length - answers.length > 0 ? ` (${ids.length - answers.length} unanswered)` : ""}
@@ -300,7 +351,7 @@ function Result({
           {missed.map((m) => {
             const q = byId.get(m.questionId);
             return (
-              <Paper key={m.questionId} withBorder p="sm" radius="md">
+              <Paper key={m.questionId} p="sm" radius="md">
                 <Text size="xs" c="dimmed">
                   {m.questionId}
                 </Text>

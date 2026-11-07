@@ -63,9 +63,9 @@ const EXIT_MS = 220;
 const IMAGE_H = "clamp(72px, 18dvh, 170px)";
 
 const STAMP: Record<Sort, { label: string; color: string }> = {
-  hard: { label: "HARD", color: "var(--mantine-color-orange-7)" },
-  next: { label: "NEXT", color: "var(--mantine-color-blue-6)" },
-  easy: { label: "EASY", color: "var(--mantine-color-teal-7)" },
+  hard: { label: "HARD", color: "var(--sim-orange)" },
+  next: { label: "NEXT", color: "var(--sim-blue)" },
+  easy: { label: "EASY", color: "var(--sim-teal)" },
 };
 
 export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNext }: Props) {
@@ -303,9 +303,10 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
               border: `3px solid ${STAMP[hint].color}`,
               borderRadius: 10,
               color: STAMP[hint].color,
-              background: "var(--mantine-color-body)",
-              fontSize: 22,
-              fontWeight: 800,
+              background: "var(--sim-card)",
+              fontFamily: "var(--sim-display)",
+              fontSize: 26,
+              fontWeight: 700,
               letterSpacing: "0.08em",
               opacity: hintStrength,
               pointerEvents: "none",
@@ -316,10 +317,9 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
         )}
 
         <Paper
-          withBorder
           radius="lg"
           p="sm"
-          shadow="sm"
+          className={phase === "wrong" ? "sim-sticker sim-shake" : "sim-sticker"}
           // The scroller must carry touch-action itself: a touch that starts inside it ignores
           // the parent's, so the browser would pan and cancel the swipe.
           style={{
@@ -341,7 +341,14 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
           >
             {/* One quiet line: where this question comes from, plus the flag tools. */}
             <Group justify="space-between" wrap="nowrap" gap={4} mih={28}>
-              <Text size="xs" fw={600} c="dimmed" truncate style={{ letterSpacing: "0.04em" }}>
+              <Text
+                size="xs"
+                fw={700}
+                c="dimmed"
+                truncate
+                className="sim-display"
+                style={{ letterSpacing: "0.04em" }}
+              >
                 {q.id}
               </Text>
               {phase === "right" && (
@@ -399,7 +406,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
               <>
                 <Box
                   h={IMAGE_H}
-                  bg="var(--mantine-color-default-hover)"
+                  bg="var(--sim-soft)"
                   style={{
                     borderRadius: "var(--mantine-radius-md)",
                     display: "flex",
@@ -454,7 +461,7 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
               </Group>
             ) : null}
 
-            <Text fz={18} fw={650} lh={1.35} data-testid="question-text">
+            <Text fz={18} fw={800} lh={1.3} data-testid="question-text">
               {q.text}
             </Text>
 
@@ -497,47 +504,48 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
           {/* Answers sit at the bottom of the card, in thumb reach, right above the sort bar. */}
           <Box mt={8} style={{ flex: "none" }}>
             <Stack gap={6}>
-              {options.map((o, i) => (
-                <Button
-                  key={o.text}
-                  fullWidth
-                  size="sm"
-                  mih={48}
-                  h="auto"
-                  py="xs"
-                  radius="md"
-                  variant={
-                    !revealed ? "default" : o.correct || o.text === picked ? "light" : "subtle"
-                  }
-                  color={optionColor(o.text, o.correct)}
-                  onClick={() => pick(o.text)}
-                  data-testid="option"
-                  data-correct={o.correct}
-                  justify="space-between"
-                  leftSection={
-                    <Text span fw={700} size="sm" c="dimmed" w={16}>
-                      {i + 1}
-                    </Text>
-                  }
-                  // Keep the icon slot in the layout at all times: adding it on reveal
-                  // narrows the label and can wrap an option onto a second line.
-                  rightSection={
-                    <Box w={20} h={20} style={{ display: "flex", alignItems: "center" }}>
+              {options.map((o, i) => {
+                const state = !revealed
+                  ? "idle"
+                  : o.correct
+                    ? "right"
+                    : o.text === picked
+                      ? "wrong"
+                      : "fade";
+                return (
+                  <button
+                    key={o.text}
+                    type="button"
+                    className="sim-ans"
+                    data-state={state}
+                    onClick={() => pick(o.text)}
+                    data-testid="option"
+                    data-correct={o.correct}
+                    style={{
+                      minHeight: 48,
+                      padding: "6px 10px 6px 7px",
+                      fontSize: 15,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    <span className="sim-key">{"ABC"[i] ?? i + 1}</span>
+                    <span style={{ flex: 1 }}>{o.text}</span>
+                    {/* Keep the icon slot in the layout at all times: adding it on reveal
+                        narrows the label and can wrap an option onto a second line. */}
+                    <Box
+                      w={22}
+                      h={22}
+                      style={{ display: "flex", alignItems: "center", flex: "none" }}
+                    >
                       {revealed && o.correct ? (
-                        <IconCheck size={20} aria-label="Correct answer" />
+                        <IconCheck size={22} stroke={3} aria-label="Correct answer" />
                       ) : revealed && o.text === picked ? (
-                        <IconX size={20} aria-label="Your answer, wrong" />
+                        <IconX size={22} stroke={3} aria-label="Your answer, wrong" />
                       ) : null}
                     </Box>
-                  }
-                  styles={{
-                    label: { whiteSpace: "normal", textAlign: "left", flex: 1 },
-                    root: revealed && !o.correct && o.text !== picked ? { opacity: 0.7 } : {},
-                  }}
-                >
-                  {o.text}
-                </Button>
-              ))}
+                  </button>
+                );
+              })}
             </Stack>
           </Box>
         </Paper>
@@ -550,12 +558,10 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
             h={52}
             px={4}
             radius="md"
-            variant="light"
-            color="orange"
             disabled={!revealed}
             onClick={() => sortAs("hard")}
             data-testid="sort-hard"
-            styles={STACKED}
+            styles={{ ...STACKED, root: { background: "var(--sim-orange)", color: "#fff" } }}
           >
             <IconArrowLeft size={18} />
             <span>Hard</span>
@@ -564,12 +570,10 @@ export function QuestionCard({ question: q, mode, flag, note, autoAdvance, onNex
             h={52}
             px={4}
             radius="md"
-            variant="light"
-            color="teal"
             disabled={!revealed}
             onClick={() => sortAs("easy")}
             data-testid="sort-easy"
-            styles={STACKED}
+            styles={{ ...STACKED, root: { background: "var(--sim-teal)", color: "#fff" } }}
           >
             <IconArrowUp size={18} />
             <span>Easy</span>

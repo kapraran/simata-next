@@ -6,7 +6,7 @@ import { gradeAnswer } from "./grade";
 import { convertLegacyStats } from "./legacy";
 import { passChance } from "./passchance";
 import { mulberry32 } from "./rng";
-import { buildSession, newSeenBetween } from "./session";
+import { buildSession, NO_REPEAT, pickNext, RELEARN_GAP, type RunEntry } from "./session";
 
 const DAY = 86_400_000;
 const T0 = Date.UTC(2026, 0, 1, 9);
@@ -93,42 +93,7 @@ describe("foldEvents", () => {
 
 describe("buildSession", () => {
   const questions = bank();
-  const base = { questions, now: T0, size: 10, newBudget: 5, rng: mulberry32(1) };
-
-  it("train on an empty history only introduces the new-question budget", () => {
-    const ids = buildSession({ ...base, progress: foldEvents([]), mode: "train" });
-    expect(ids).toHaveLength(5);
-  });
-
-  it("train puts due questions first and never pads with known ones", () => {
-    const events = questions.slice(0, 30).map((q) => ev(q.id, T0 - 30 * DAY, { durationMs: 2000 }));
-    const progress = foldEvents(events);
-    const ids = buildSession({ ...base, progress, now: T0 + 1000, mode: "train", newBudget: 0 });
-    // 30 answered long ago: those are due. Nothing new allowed.
-    expect(ids).toHaveLength(10);
-    expect(ids.every((id) => questions.slice(0, 30).some((q) => q.id === id))).toBe(true);
-
-    const fresh = foldEvents(questions.map((q) => ev(q.id, T0, { durationMs: 2000 })));
-    expect(
-      buildSession({ ...base, progress: fresh, now: T0 + 1000, mode: "train", newBudget: 0 }),
-    ).toEqual([]);
-  });
-
-  it("skips disabled questions and ones flagged easy", () => {
-    const qs = bank(40).map((q, i) => (i < 10 ? { ...q, disabled: true as const } : q));
-    const flags = { [qs[10]?.id as string]: "easy" as const };
-    const ids = buildSession({
-      ...base,
-      questions: qs,
-      progress: foldEvents([]),
-      mode: "sweep",
-      size: 100,
-      flags,
-    });
-    expect(ids).toHaveLength(29);
-    expect(ids).not.toContain(qs[0]?.id);
-    expect(ids).not.toContain(qs[10]?.id);
-  });
+  const base = { questions, now: T0, size: 10, rng: mulberry32(1) };
 
   it("weak mode picks recent mistakes and guesses, worst first", () => {
     const progress = foldEvents([
@@ -151,11 +116,6 @@ describe("buildSession", () => {
   it("exam draws 30 distinct questions", () => {
     const ids = buildSession({ ...base, progress: foldEvents([]), mode: "exam" });
     expect(new Set(ids).size).toBe(30);
-  });
-
-  it("counts questions first seen today", () => {
-    const progress = foldEvents([ev("a", T0), ev("b", T0 + 1), ev("c", T0 - DAY)]);
-    expect(newSeenBetween(progress, T0 - 1000, T0 + DAY)).toBe(2);
   });
 });
 
@@ -199,5 +159,86 @@ describe("convertLegacyStats", () => {
       mode: "legacy",
     });
     expect(flags).toEqual({ "A 1": "hard" });
+  });
+});
+
+describe("pickNext", () => {
+  const questions = bank(60);
+  const ids = questions.map((q) => q.id);
+
+  /** Run the picker against its own answers, all right unless `miss` says otherwise. */
+  function drive(
+    steps: number,
+    opts: {
+      miss?: (id: string, i: number) => boolean;
+      flags?: Record<string, "hard" | "easy">;
+    } = {},
+  ) {
+    const rng = mulberry32(3);
+    const events: AnswerEvent[] = [];
+    const run: RunEntry[] = [];
+    for (let i = 0; i < steps; i++) {
+      const id = pickNext({ questions, progress: foldEvents(events), flags: opts.flags, run, rng });
+      if (!id) break;
+      const correct = !opts.miss?.(id, i);
+      run.push({ id, correct, guessed: false });
+      events.push(ev(id, T0 + i * 1000, { correct }));
+    }
+    return run;
+  }
+
+  it("shows every question once before any is shown twice", () => {
+    const run = drive(60);
+    expect(new Set(run.map((r) => r.id)).size).toBe(60);
+  });
+
+  it("is not capped per day: the whole bank can be done in one sitting", () => {
+    const run = drive(120);
+    const counts = new Map<string, number>();
+    for (const r of run) counts.set(r.id, (counts.get(r.id) ?? 0) + 1);
+    expect(counts.size).toBe(60);
+    expect([...counts.values()].every((c) => c === 2)).toBe(true);
+  });
+
+  it("brings a miss back after RELEARN_GAP others, then once more later", () => {
+    const target = ids[0] as string;
+    let missed = false;
+    const run = drive(100, {
+      miss: (id) => {
+        if (id === target && !missed) {
+          missed = true;
+          return true;
+        }
+        return false;
+      },
+    });
+    const at = run.map((r, i) => (r.id === target ? i : -1)).filter((i) => i >= 0);
+    expect(at.length).toBeGreaterThanOrEqual(3);
+    expect((at[1] as number) - (at[0] as number)).toBe(RELEARN_GAP + 1);
+    expect((at[2] as number) - (at[1] as number)).toBeGreaterThanOrEqual(30);
+  });
+
+  it("never picks easy questions and never repeats within the last NO_REPEAT", () => {
+    const flags = { [ids[1] as string]: "easy" as const, [ids[2] as string]: "easy" as const };
+    const run = drive(150, { flags });
+    expect(run.some((r) => r.id === ids[1] || r.id === ids[2])).toBe(false);
+    run.forEach((r, i) => {
+      const prior = run.slice(Math.max(0, i - NO_REPEAT), i).map((x) => x.id);
+      expect(prior).not.toContain(r.id);
+    });
+  });
+
+  it("shows a hard-flagged question more often than a normal one", () => {
+    const hard = ids[5] as string;
+    const run = drive(300, { flags: { [hard]: "hard" } });
+    const count = (id: string) => run.filter((r) => r.id === id).length;
+    expect(count(hard)).toBeGreaterThan(count(ids[6] as string));
+  });
+
+  it("returns undefined when everything is retired", () => {
+    const flags = Object.fromEntries(ids.map((id) => [id, "easy" as const]));
+    expect(
+      pickNext({ questions, progress: foldEvents([]), flags, run: [], rng: mulberry32(1) }),
+    ).toBeUndefined();
   });
 });

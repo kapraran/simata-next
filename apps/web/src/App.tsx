@@ -1,13 +1,13 @@
-import { ActionIcon, AppShell, Container, Group, Loader, Title, Tooltip } from "@mantine/core";
+import { ActionIcon, AppShell, Container, Group, Loader, Tooltip } from "@mantine/core";
 import {
   IconChartBar,
   IconCloudCheck,
   IconCloudOff,
   IconCloudUp,
   IconSettings,
-  IconSteeringWheel,
 } from "@tabler/icons-react";
 import { Link, Route, Routes, useMatch } from "react-router-dom";
+import { LogoMark, SignSprite } from "./components/Signs";
 import { db } from "./data/db";
 import { LearnerProvider, useLearner, useSyncState } from "./data/learner";
 import { syncNow } from "./data/sync";
@@ -33,6 +33,7 @@ function SyncIndicator() {
       <ActionIcon
         variant="subtle"
         color={failed ? "red" : pendingCount > 0 ? "yellow" : "gray"}
+        style={failed || pendingCount > 0 ? undefined : { color: "#fff" }}
         aria-label={label}
         onClick={() => void syncNow(db)}
         data-testid="sync-indicator"
@@ -65,14 +66,19 @@ export function App() {
   const inQuiz = useMatch("/quiz/:mode") !== null;
   return (
     <LearnerProvider>
+      <SignSprite />
       <AppShell header={inQuiz ? undefined : { height: 56 }} padding={inQuiz ? "xs" : "md"}>
         {!inQuiz && (
-          <AppShell.Header>
+          <AppShell.Header className="sim-appbar">
             <Group h="100%" px="md" justify="space-between">
-              <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
+              <Link
+                to="/"
+                style={{ color: "inherit", textDecoration: "none" }}
+                aria-label="Simata home"
+              >
                 <Group gap="xs">
-                  <IconSteeringWheel size={24} />
-                  <Title order={4}>Simata</Title>
+                  <LogoMark size={28} />
+                  <span className="sim-brand">Simata</span>
                 </Group>
               </Link>
               <Group gap={4}>
@@ -82,6 +88,7 @@ export function App() {
                   to="/stats"
                   variant="subtle"
                   color="gray"
+                  style={{ color: "#fff" }}
                   aria-label="Stats"
                 >
                   <IconChartBar size={20} />
@@ -91,6 +98,7 @@ export function App() {
                   to="/settings"
                   variant="subtle"
                   color="gray"
+                  style={{ color: "#fff" }}
                   aria-label="Settings"
                 >
                   <IconSettings size={20} />

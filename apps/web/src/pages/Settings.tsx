@@ -1,4 +1,4 @@
-import { Button, Group, NumberInput, Paper, Stack, Switch, Text, Title } from "@mantine/core";
+import { Button, Group, Paper, Stack, Switch, Text, Title } from "@mantine/core";
 import { IconRefresh } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { db, getMeta } from "../data/db";
@@ -23,22 +23,6 @@ export function SettingsPage() {
       <Title order={2}>Settings</Title>
       <Paper withBorder p="md" radius="md">
         <Stack gap="md">
-          <NumberInput
-            label="New questions per day"
-            description="Train introduces at most this many questions you have never seen."
-            min={0}
-            max={100}
-            value={settings.newPerDay}
-            onChange={(v) => typeof v === "number" && update({ newPerDay: v })}
-          />
-          <NumberInput
-            label="Daily goal"
-            description="Answers per day. Shown as a bar while you train."
-            min={5}
-            max={500}
-            value={settings.dailyGoal}
-            onChange={(v) => typeof v === "number" && update({ dailyGoal: v })}
-          />
           <Switch
             label="Move on by itself after a right answer"
             checked={settings.autoAdvance}

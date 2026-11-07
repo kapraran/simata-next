@@ -21,6 +21,23 @@ Source: session 2026-11-06.
 - **The quiz fills the screen height and never scrolls the page.** The card scrolls inside itself when a question is long; the strip and the sort bar stay put. The picture slot shrinks on short screens (`clamp(72px, 15dvh, 130px)`). (Session 2026-11-07.)
 - **Sort bar is always in the layout.** Hard / Easy / Next are visible but locked until you answer ("Pick an answer"), so answering doesn't resize the card. Hard and Easy stack icon over label so the text is never clipped. (Session 2026-11-07.)
 
+## Question selection (Train)
+
+Source: session 2026-11-07, artifact comment on the revamp mockup.
+
+- **No new-per-day limit.** Learners can see as many new questions per day as they want, and the whole bank is reachable from Train. Remove the `newPerDay` setting and the `newBudget` cap in `packages/core/src/session.ts`.
+- **Even exposure as the baseline.** Track every view of every question. Train aims for roughly equal views across all questions, so unseen and rarely seen questions carry more weight.
+- **Only the learner's sorting moves the weight.** Hard (and wrong / guessed) raise a question's weight, Easy retires it, Next leaves it on the even schedule.
+- **No hint line under the sort bar.** Drop the "Pick an answer" text. The greyed-out Hard / Easy / Next buttons already show they are locked. (User, 2026-11-07, artifact comment.)
+- **No daily goal anywhere.** The goal bar comes out of the quiz strip as well (the strip keeps Stop, the sort tally and the streak), and the daily-goal setting goes away. This replaces "daily-goal bar" in the Quiz UX strip requirement above. (User, 2026-11-07, artifact comment.)
+- **Never constrained.** Going through the whole bank in one day must be possible. The goal is fast coverage and solid confidence on every question. (User, 2026-11-07: "do what you think is best… def not want to be constrained.")
+- **Decided design (2026-11-07):** Train is one endless queue and picks each next question like this:
+  1. **Relearn first.** A question answered wrong or "guessed" comes back after about 8 other questions. Once it is right again, it comes back once more about 30 questions later.
+  2. **Otherwise, the fewest effective views.** Effective views = (views − 0.5 per recent miss, up to 2) ÷ 1.5 if flagged Hard. Unseen questions have 0 views, so they come first; a Hard question returns about 1.5 times as often. Built as `pickNext` in `packages/core/src/session.ts`; the Weak list, exam and pass chance are unchanged.
+  3. Easy questions are retired. Nothing repeats within the last 10 questions. Ties are broken at random.
+  - **FSRS stays, but out of the picking.** It still updates on every answer and drives the pass chance and the Weak list. Due dates no longer gate Train.
+  - **Confidence per question:** the last 2 answers are right and neither was guessed. Home shows "Confident N/825" in place of "Seen". It is the progress number that matters for "good confidence for all".
+
 ## Browser / layout stability
 
 Source: session 2026-11-06.
@@ -46,7 +63,9 @@ Source: session 2026-11-07.
 
 Source: session 2026-11-07.
 
-- **Playful UI revamp, driven by the new logo** (`../Simata Road Safety App Icon.png`). The user finds the current look (stock Mantine, grey, orange "S" favicon) boring. Direction: saturated road-sign blue, sticker-style signs with thick white outlines and soft drop shadows, warm yellow highlights (swoosh underline, "spark" lines), chunky rounded type. Status: planning. Earlier explorations: `docs/mockups/playful-redesign.html`, `docs/mockups/playful-rethink.html`.
+- **Playful UI revamp, driven by the new logo** (`../Simata Road Safety App Icon.png`). The user finds the current look (stock Mantine, grey, orange "S" favicon) boring. Direction: saturated road-sign blue, sticker-style signs with thick white outlines and soft drop shadows, warm yellow highlights (swoosh underline, "spark" lines), chunky rounded type. Status: mockup for review: `docs/mockups/logo-revamp.html` (artifact: https://claude.ai/artifact/NRZWtzUfUX6oVxTTSHhEFf). Fonts: Fredoka for display (Latin only), Manrope for question text (has Greek). Earlier explorations: `docs/mockups/playful-redesign.html`, `docs/mockups/playful-rethink.html`.
+- **Home: no daily-goal road widget.** The user did not like the car-on-a-road goal bar in the mockup; removed. (Session 2026-11-07, artifact comment.)
+- **Drop Sweep as a separate mode; Train is the one practice entry.** Sweep (unseen questions, ignores the new-per-day cap) confused the user ("what is the Sweep?") and they asked to make it "only Train". Home keeps Train plus Mock exam and Weak. (Session 2026-11-07, artifact comment.)
 
 ## Working style (for the agent)
 

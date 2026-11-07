@@ -8,6 +8,8 @@ export type QState = {
   correct: number;
   /** Wrong answers in a row at the end of the history. */
   wrongStreak: number;
+  /** Right, unguessed answers in a row at the end. Two or more means "confident". */
+  rightStreak: number;
   firstSeenAt: number;
   /** Whether the very first answer was right. */
   firstCorrect: boolean;
@@ -24,6 +26,9 @@ export type Progress = {
   fastMs: number;
   scheduler: Scheduler;
 };
+
+/** Last two answers right and unguessed. */
+export const isConfident = (s: QState | undefined): boolean => (s?.rightStreak ?? 0) >= 2;
 
 const MIN_SAMPLES_FOR_SLOW = 20;
 /** Longer than this is an idle tab, not thinking time; it must not skew the speed thresholds. */
@@ -53,6 +58,7 @@ export function foldEvents(
       seen: (prev?.seen ?? 0) + 1,
       correct: (prev?.correct ?? 0) + (e.correct ? 1 : 0),
       wrongStreak: e.correct ? 0 : (prev?.wrongStreak ?? 0) + 1,
+      rightStreak: e.correct && !e.guessed ? (prev?.rightStreak ?? 0) + 1 : 0,
       firstSeenAt: prev?.firstSeenAt ?? e.at,
       firstCorrect: prev?.firstCorrect ?? e.correct,
       lastAt: e.at,

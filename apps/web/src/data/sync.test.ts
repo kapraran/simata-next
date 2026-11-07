@@ -211,12 +211,11 @@ describe("refreshBank", () => {
 });
 
 describe("parseSettings", () => {
-  it("falls back to defaults and clamps", () => {
-    expect(parseSettings(undefined).newPerDay).toBe(10);
-    expect(parseSettings("not json").sessionSize).toBe(10);
-    expect(parseSettings('{"newPerDay":9999,"sessionSize":1}')).toMatchObject({
-      newPerDay: 100,
-      sessionSize: 3,
+  it("falls back to defaults and ignores removed settings", () => {
+    expect(parseSettings(undefined)).toEqual({ autoAdvance: false });
+    expect(parseSettings("not json")).toEqual({ autoAdvance: false });
+    expect(parseSettings('{"newPerDay":9999,"sessionSize":1,"autoAdvance":true}')).toEqual({
+      autoAdvance: true,
     });
   });
 });

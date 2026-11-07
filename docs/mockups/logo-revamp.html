@@ -1,0 +1,477 @@
+<title>Simata Sticker Revamp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ===== tokens (taken from the logo) ===== */
+:root {
+  --blue: #1E5BD8; --blue-hi: #3B7BF2; --blue-lo: #1446B0;
+  --navy: #0B2A6B; --red: #E8322B; --yellow: #FFD21F;
+  --green: #17A862; --orange: #F07A12; --teal: #0E9F99;
+
+  --page: #DCE7FB;
+  --bg: #EEF4FF; --card: #FFFFFF; --ink: #0B2A6B; --dim: #4F6596;
+  --line: #0B2A6B; --shadow: #0B2A6B; --sticker-edge: #FFFFFF;
+  --track: #D5E1F7; --soft-blue: #E3EDFF; --chip: #E3EDFF;
+  --display: "Fredoka", "Manrope", system-ui, sans-serif;
+  --body: "Manrope", system-ui, sans-serif;
+}
+:root[data-theme="dark"] {
+  --page: #050A18;
+  --bg: #0A1430; --card: #13224A; --ink: #EAF0FF; --dim: #9DB0DA;
+  --line: #2D4685; --shadow: #030816; --sticker-edge: #D8E4FF;
+  --track: #22376B; --soft-blue: #1A2D5E; --chip: #1C2F61;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #050A18;
+    --bg: #0A1430; --card: #13224A; --ink: #EAF0FF; --dim: #9DB0DA;
+    --line: #2D4685; --shadow: #030816; --sticker-edge: #D8E4FF;
+    --track: #22376B; --soft-blue: #1A2D5E; --chip: #1C2F61;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+body { background: var(--page); color: var(--ink); font-family: var(--body); padding-block: 24px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ===== page chrome ===== */
+.top { max-width: 1200px; margin: 0 auto 16px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; }
+.top h1 { font-family: var(--display); font-weight: 700; font-size: 30px; margin: 0; }
+.top p { margin: 4px 0 0; color: var(--dim); font-size: 14px; max-width: 640px; line-height: 1.5; }
+.seg { display: inline-flex; background: var(--card); border: 2.5px solid var(--line); border-radius: 999px; box-shadow: 0 3px 0 var(--shadow); padding: 3px; }
+.seg button { font: 600 14px var(--display); border: 0; background: none; color: var(--ink); padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.seg button.on { background: var(--blue); color: #fff; }
+.stage { max-width: 1200px; margin: 0 auto; display: flex; gap: 28px; overflow-x: auto; padding: 8px 4px 24px; }
+.col { display: flex; flex-direction: column; gap: 10px; flex: none; }
+.col .label { font: 700 12px var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.col .note { font-size: 12.5px; color: var(--dim); max-width: 340px; line-height: 1.45; }
+
+.phone { width: 340px; height: 720px; border-radius: 42px; padding: 10px; background: #000; box-shadow: 0 20px 50px rgba(11,42,107,.35); flex: none; }
+.screen { width: 100%; height: 100%; border-radius: 33px; overflow: hidden; background: var(--bg); position: relative; display: flex; flex-direction: column; }
+
+/* ===== shared stickers ===== */
+.stk { background: var(--card); border: 2.5px solid var(--line); border-radius: 18px; box-shadow: 0 4px 0 var(--shadow); }
+.btn { font: 600 17px var(--display); border: 2.5px solid var(--line); border-radius: 16px; box-shadow: 0 4px 0 var(--shadow);
+  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; color: #fff; background: var(--blue);
+  transition: transform .08s, box-shadow .08s; user-select: none; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--shadow); }
+.btn[disabled] { opacity: .45; cursor: default; filter: saturate(.4); }
+.btn[disabled]:active { transform: none; box-shadow: 0 4px 0 var(--shadow); }
+svg.ic { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.swoosh { display: block; height: 8px; border-radius: 99px; background: var(--yellow); transform: rotate(-2deg); box-shadow: 0 2px 0 rgba(11,42,107,.35); }
+
+/* ===== app header ===== */
+.appbar { height: 64px; flex: none; padding: 16px 14px 0; display: flex; align-items: center; justify-content: space-between;
+  background: var(--blue); color: #fff; position: relative; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand b { font: 700 24px var(--display); letter-spacing: .01em; text-shadow: 0 2px 0 var(--navy); position: relative; }
+.brand b::after { content: ""; position: absolute; left: 4px; right: 0; bottom: -3px; height: 4px; border-radius: 9px; background: var(--yellow); transform: rotate(-2deg); }
+.hicons { display: flex; gap: 6px; }
+.hicons span { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgba(255,255,255,.16); }
+
+/* ===== HOME ===== */
+.hero { background: var(--blue); color: #fff; padding: 8px 16px 64px; position: relative; overflow: hidden;
+  border-radius: 0 0 36px 36px; }
+.hero::before { content: ""; position: absolute; inset: -60%; background:
+  repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.07) 0 9deg, transparent 9deg 22deg); }
+.hero > * { position: relative; }
+.hero h2 { font: 700 26px var(--display); margin: 2px 0 2px; }
+.hero p { margin: 0; font-size: 13.5px; opacity: .9; font-weight: 600; }
+.meter { margin: -54px 16px 0; position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.meter > svg { flex: none; }
+.meter .txt b { font: 700 18px var(--display); display: block; line-height: 1.15; }
+.meter .txt span { font-size: 12.5px; color: var(--dim); font-weight: 600; }
+.sparks { position: absolute; left: 8px; top: -14px; }
+.body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat { padding: 10px 10px 10px 12px; display: flex; align-items: center; gap: 10px; border-radius: 16px; }
+.stat .n { font: 700 22px var(--display); line-height: 1; }
+.stat .l { font-size: 11.5px; font-weight: 700; color: var(--dim); }
+.train { height: 58px; font-size: 21px; border-radius: 18px; background: linear-gradient(180deg, var(--blue-hi), var(--blue)); }
+.train .pill { background: var(--yellow); color: var(--navy); border-radius: 99px; padding: 1px 10px; font-size: 16px; border: 2px solid var(--navy); }
+.modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.mode { padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; font: 600 14px var(--display); color: var(--ink); background: var(--card); }
+.road { padding: 10px 12px; }
+.road .row { display: flex; justify-content: space-between; font: 600 13px var(--display); margin-bottom: 6px; }
+.road .lane { height: 26px; border-radius: 10px; background: #3B4560; position: relative; overflow: hidden; }
+.road .lane::before { content: ""; position: absolute; left: 6px; right: 6px; top: 12px; height: 2px;
+  background: repeating-linear-gradient(90deg, #fff 0 10px, transparent 10px 18px); opacity: .7; }
+.road .done { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, rgba(255,210,31,.0), rgba(255,210,31,.35)); }
+.road .car { position: absolute; top: 2px; transition: left .6s; }
+.road .flag { position: absolute; right: 4px; top: 3px; }
+
+/* ===== QUIZ ===== */
+.qwrap { padding: 46px 10px 12px; display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.strip { height: 32px; display: flex; align-items: center; gap: 8px; }
+.stop { width: 32px; height: 32px; border-radius: 10px; padding: 0; background: var(--red); border-width: 2px; box-shadow: 0 3px 0 var(--shadow); }
+.goal { flex: 1; height: 12px; border-radius: 99px; background: var(--track); border: 2px solid var(--line); overflow: hidden; }
+.goal i { display: block; height: 100%; background: var(--yellow); border-right: 2px solid var(--line); transition: width .4s; }
+.gtxt { font: 600 13px var(--display); }
+.tally { display: flex; gap: 6px; font: 700 13px var(--display); }
+.streak { display: flex; align-items: center; gap: 3px; font: 700 14px var(--display); padding: 2px 9px 2px 6px; border-radius: 99px;
+  background: var(--chip); border: 2px solid var(--line); position: relative; }
+.streak.hot { background: var(--yellow); color: var(--navy); }
+.streak.pop { animation: pop .45s; }
+.card { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 10px 12px 12px; gap: 9px; position: relative; overflow: hidden; }
+.card.shake { animation: shake .4s; }
+.card.in { animation: cardin .35s cubic-bezier(.2,1.4,.4,1); }
+.cap { display: flex; justify-content: space-between; align-items: center; font: 600 12.5px var(--display); color: var(--dim); }
+.cap .t { display: flex; gap: 10px; }
+.pic { height: clamp(72px, 15dvh, 130px); border-radius: 14px; background: var(--soft-blue); display: grid; place-items: center; flex: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(30,91,216,.18) 1px, transparent 0); background-size: 12px 12px; }
+.q { font: 800 18px/1.3 var(--body); margin: 0; }
+.answers { display: flex; flex-direction: column; gap: 9px; }
+.ans { min-height: 48px; border-radius: 14px; border: 2.5px solid var(--line); background: var(--card); box-shadow: 0 3px 0 var(--shadow);
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 7px; font: 700 15px/1.25 var(--body); color: var(--ink); text-align: left; cursor: pointer;
+  transition: transform .08s, box-shadow .08s, background .15s; width: 100%; }
+.ans:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--shadow); }
+.ans .k { width: 30px; height: 30px; border-radius: 10px; flex: none; display: grid; place-items: center; font: 700 15px var(--display);
+  background: var(--soft-blue); color: var(--blue); border: 2px solid var(--line); }
+.ans .mark { margin-left: auto; width: 22px; height: 22px; flex: none; }
+.ans.right { background: var(--green); color: #fff; animation: bounce .45s; }
+.ans.right .k { background: #fff; color: var(--green); }
+.ans.wrong { background: var(--red); color: #fff; }
+.ans.wrong .k { background: #fff; color: var(--red); }
+.ans.fade { opacity: .55; }
+.verdict { display: flex; gap: 8px; align-items: center; min-height: 28px; }
+.chip { font: 600 13px var(--display); padding: 3px 11px; border-radius: 99px; border: 2px solid var(--line); display: inline-flex; gap: 5px; align-items: center; cursor: pointer; background: var(--card); color: var(--ink); }
+.chip.ok { background: var(--green); color: #fff; }
+.chip.no { background: var(--red); color: #fff; }
+.chip.guess.on { background: #7B4CDB; color: #fff; }
+.sortbar { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 8px; flex: none; }
+.sortbar .btn { height: 54px; flex-direction: column; gap: 0; font-size: 14px; border-radius: 14px; }
+.sortbar .btn.hard { background: var(--orange); }
+.sortbar .btn.easy { background: var(--teal); }
+.sortbar .btn.next { flex-direction: row; font-size: 19px; gap: 6px; }
+.lockhint { text-align: center; font: 600 12.5px var(--display); color: var(--dim); height: 14px; margin-top: -2px; }
+.stamp { position: absolute; top: 34%; right: 16px; transform: rotate(12deg); font: 700 30px var(--display); color: var(--blue); border: 4px solid var(--blue);
+  border-radius: 12px; padding: 0 12px; opacity: 0; pointer-events: none; letter-spacing: .06em; background: rgba(255,255,255,.75); }
+.stamp.show { animation: stamp .9s; }
+.toast { position: absolute; top: 88px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff; font: 600 14px var(--display);
+  padding: 6px 14px; border-radius: 99px; white-space: nowrap; opacity: 0; transition: opacity .2s; z-index: 9; border: 2px solid var(--yellow); }
+.toast.on { opacity: 1; }
+
+/* ===== EXAM RESULT ===== */
+.res { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.badge-big { align-self: center; margin-top: 2px; position: relative; }
+.score { text-align: center; }
+.score b { font: 700 46px/1 var(--display); }
+.score small { font: 600 20px var(--display); color: var(--dim); }
+.score .h { font: 700 26px var(--display); margin: 4px 0 2px; display: inline-block; }
+.lights { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+.tl { display: flex; gap: 5px; background: var(--navy); padding: 5px 7px; border-radius: 10px; border: 2px solid var(--sticker-edge); }
+.tl i { width: 12px; height: 12px; border-radius: 50%; background: #2F3B5E; }
+.tl i.g { background: #3FE08A; box-shadow: 0 0 8px #3FE08A; }
+.miss { display: flex; flex-direction: column; gap: 8px; }
+.miss .m { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; font-weight: 700; font-size: 13.5px; }
+.miss .x { width: 26px; height: 26px; border-radius: 8px; background: var(--red); color: #fff; display: grid; place-items: center; flex: none; border: 2px solid var(--line); }
+.rbtns { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: auto; }
+.rbtns .btn { height: 52px; }
+.rbtns .btn.ghost { background: var(--card); color: var(--ink); }
+
+/* ===== motion ===== */
+@keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.35) rotate(-6deg)} 100%{transform:scale(1)} }
+@keyframes bounce { 0%{transform:scale(1)} 35%{transform:scale(1.04)} 65%{transform:scale(.985)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(2px)} }
+@keyframes cardin { from{transform:scale(.92) translateY(10px); opacity:0} to{transform:none; opacity:1} }
+@keyframes stamp { 0%{opacity:0; transform:rotate(12deg) scale(1.6)} 25%{opacity:1; transform:rotate(12deg) scale(1)} 75%{opacity:1} 100%{opacity:0} }
+@keyframes spark { 0%,100%{opacity:.4; transform:scale(.9)} 50%{opacity:1; transform:scale(1.1)} }
+.sparks { animation: spark 1.8s infinite; transform-origin: 80% 80%; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (max-width: 420px) { .phone { width: 320px; } }
+</style>
+
+<!-- reusable SVG symbols -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- warning triangle sticker -->
+    <symbol id="s-warn" viewBox="0 0 40 38">
+      <path d="M20 4 L37 34 H3 Z" fill="#0B2A6B" transform="translate(0 2.5)" stroke="#0B2A6B" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M20 4 L37 34 H3 Z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M20 8 L33.5 32 H6.5 Z" fill="#fff" stroke="#E8322B" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="18.4" y="15" width="3.2" height="9" rx="1.6" fill="#0B2A6B"/><circle cx="20" cy="27.6" r="1.9" fill="#0B2A6B"/>
+    </symbol>
+    <!-- round blue sign (roundabout) -->
+    <symbol id="s-round" viewBox="0 0 40 40">
+      <circle cx="20" cy="22" r="17.5" fill="#0B2A6B"/>
+      <circle cx="20" cy="20" r="17.5" fill="#fff"/>
+      <circle cx="20" cy="20" r="15" fill="#1E5BD8"/>
+      <g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round">
+        <path d="M12.2 15.5 A9 9 0 0 1 22 11.2"/><path d="M28.6 17.6 A9 9 0 0 1 24.4 27.9"/><path d="M17.2 28.6 A9 9 0 0 1 11 20.6"/>
+      </g>
+      <g fill="#fff"><path d="M21 7.6 L26 11.6 L20.4 14.4 Z"/><path d="M31.4 20.3 L28.5 26.2 L25.6 21.6 Z"/><path d="M9.2 23.8 L9.2 17.4 L14.2 19.8 Z"/></g>
+    </symbol>
+    <!-- speed limit 50 mini -->
+    <symbol id="s-speed" viewBox="0 0 40 40">
+      <circle cx="20" cy="22" r="17.5" fill="#0B2A6B"/>
+      <circle cx="20" cy="20" r="17.5" fill="#fff"/>
+      <circle cx="20" cy="20" r="13.2" fill="#fff" stroke="#E8322B" stroke-width="4.4"/>
+      <text x="20" y="25" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="14" fill="#0B2A6B">50</text>
+    </symbol>
+    <!-- priority diamond -->
+    <symbol id="s-diamond" viewBox="0 0 40 40">
+      <rect x="8" y="10" width="24" height="24" rx="3" transform="rotate(45 20 22)" fill="#0B2A6B"/>
+      <rect x="7" y="7" width="26" height="26" rx="3.5" transform="rotate(45 20 20)" fill="#fff"/>
+      <rect x="12" y="12" width="16" height="16" rx="2" transform="rotate(45 20 20)" fill="#FFD21F" stroke="#0B2A6B" stroke-width="1.2"/>
+    </symbol>
+    <!-- info square -->
+    <symbol id="s-info" viewBox="0 0 40 40">
+      <rect x="4" y="6.5" width="32" height="32" rx="7" fill="#0B2A6B"/>
+      <rect x="4" y="4" width="32" height="32" rx="7" fill="#fff"/>
+      <rect x="7" y="7" width="26" height="26" rx="5" fill="#17A862"/>
+      <path d="M13.5 20.5 l4.2 4.2 l8.8 -9" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- stop octagon -->
+    <symbol id="s-stop" viewBox="0 0 40 40">
+      <path d="M13 4 H27 L36 13 V27 L27 36 H13 L4 27 V13 Z" fill="#0B2A6B" transform="translate(0 2.5)"/>
+      <path d="M13 4 H27 L36 13 V27 L27 36 H13 L4 27 V13 Z" fill="#fff"/>
+      <path d="M14.2 7 H25.8 L33 14.2 V25.8 L25.8 33 H14.2 L7 25.8 V14.2 Z" fill="#E8322B"/>
+    </symbol>
+    <!-- yellow spark lines (from logo) -->
+    <symbol id="sparks" viewBox="0 0 40 40">
+      <g stroke="#FFD21F" stroke-width="5" stroke-linecap="round"><path d="M24 4 L28 14"/><path d="M8 12 L17 18"/><path d="M4 28 L14 28"/></g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="top">
+  <div>
+    <h1>Simata · sticker revamp</h1>
+    <p>Taken from the new logo: road-sign blue, white-edged sign stickers with a hard navy shadow, yellow sparks and swoosh, round chunky type. The quiz layout rules stay the same (one 32 px strip, fixed sort bar, no resize on answer). Tap answers on the quiz phone.</p>
+  </div>
+  <div class="seg" role="group" aria-label="Theme">
+    <button data-t="light">Light</button><button data-t="dark">Dark</button>
+  </div>
+</div>
+
+<div class="stage">
+
+  <!-- ================= HOME ================= -->
+  <div class="col">
+    <div class="label">Home</div>
+    <div class="phone"><div class="screen">
+      <div class="appbar">
+        <div class="brand">
+          <svg width="40" height="30" viewBox="0 0 60 44" aria-hidden="true">
+            <use href="#s-speed" x="14" y="0" width="26" height="26"/>
+            <use href="#s-round" x="30" y="14" width="26" height="26"/>
+            <use href="#s-warn" x="0" y="10" width="32" height="30"/>
+          </svg>
+          <b>Simata</b>
+        </div>
+        <div class="hicons">
+          <span title="Synced"><svg class="ic" viewBox="0 0 24 24"><path d="M7 18a4.6 4.4 0 0 1 0-9 5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7z"/><path d="M9 13l2 2 4-4"/></svg></span>
+          <span title="Stats"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+          <span title="Settings"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.5 14H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 4.6V4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V10a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></span>
+        </div>
+      </div>
+      <div class="hero">
+        <h2>Ready to roll?</h2>
+      </div>
+      <div class="stk meter">
+        <svg class="sparks" width="34" height="34"><use href="#sparks"/></svg>
+        <svg width="92" height="96" viewBox="0 0 120 124" aria-label="72 percent chance to pass">
+          <circle cx="60" cy="64" r="56" fill="#0B2A6B"/>
+          <circle cx="60" cy="60" r="56" fill="#fff"/>
+          <circle cx="60" cy="60" r="44" fill="none" stroke="#F8D3D1" stroke-width="15"/>
+          <circle id="ring" cx="60" cy="60" r="44" fill="none" stroke="#E8322B" stroke-width="15" stroke-linecap="round"
+            stroke-dasharray="276.5" stroke-dashoffset="77.4" transform="rotate(-90 60 60)"/>
+          <text x="58" y="72" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="34" fill="#0B2A6B">72<tspan font-size="17" dy="-12">%</tspan></text>
+        </svg>
+        <div class="txt">
+          <b>Chance to pass a mock exam today</b>
+          <span>Up 6% this week. Keep it rolling.</span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="stats">
+          <div class="stk stat"><svg width="34" height="34"><use href="#s-round"/></svg><div><div class="n">37</div><div class="l">Answered today</div></div></div>
+          <div class="stk stat"><svg width="34" height="34"><use href="#s-diamond"/></svg><div><div class="n">413</div><div class="l">Never seen</div></div></div>
+          <div class="stk stat"><svg width="34" height="34"><use href="#s-info"/></svg><div><div class="n">286<small style="font-size:13px;color:var(--dim)">/825</small></div><div class="l">Confident</div></div></div>
+          <div class="stk stat"><svg width="36" height="34"><use href="#s-warn"/></svg><div><div class="n">38</div><div class="l">Weak spots</div></div></div>
+        </div>
+        <button class="btn train"><svg class="ic" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M7 4v16l13-8z" fill="currentColor"/></svg>Train</button>
+        <div class="modes">
+          <button class="btn mode"><svg width="30" height="30"><use href="#s-stop"/></svg>Mock exam</button>
+          <button class="btn mode"><svg width="32" height="30"><use href="#s-warn"/></svg>Weak</button>
+          <button class="btn mode"><svg width="30" height="30"><use href="#s-diamond"/></svg>By topic</button>
+          <button class="btn mode"><svg width="30" height="30"><use href="#s-speed"/></svg>Blitz · 60s</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="note">The pass meter becomes a speed-limit sign. Each stat and mode gets its own sign.</div>
+  </div>
+
+  <!-- ================= QUIZ ================= -->
+  <div class="col">
+    <div class="label">Train · interactive</div>
+    <div class="phone"><div class="screen">
+      <div class="toast" id="toast">Hard · you'll see it more</div>
+      <div class="qwrap">
+        <div class="strip">
+          <button class="btn stop" aria-label="Stop run"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg></button>
+          <span style="flex:1"></span>
+          <span class="tally"><span style="color:var(--orange)" id="tH">2</span><span style="color:var(--blue)" id="tN">5</span><span style="color:var(--teal)" id="tE">1</span></span>
+          <span class="streak hot" id="streak"><svg class="ic" viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M13 3L5 14h6l-1 7 8-11h-6z" fill="currentColor" stroke="none"/></svg><span id="sN">6</span></span>
+        </div>
+
+        <div class="stk card in" id="card">
+          <div class="stamp" id="stamp">NEXT</div>
+          <div class="cap"><span>#1042 · Σήμανση</span><span class="t">
+            <svg class="ic" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>
+            <svg class="ic" viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></span></div>
+          <div class="pic" id="pic"><svg width="96" height="96"><use href="#s-round"/></svg></div>
+          <p class="q" id="q">Τι σημαίνει αυτή η πινακίδα;</p>
+          <div class="answers" id="answers"></div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+
+        <div class="sortbar">
+          <button class="btn hard" id="bH" disabled><svg class="ic" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>Hard</button>
+          <button class="btn easy" id="bE" disabled><svg class="ic" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>Easy</button>
+          <button class="btn next" id="bN" disabled>Next<svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+    </div></div>
+    <div class="note">Right answers bounce green; wrong ones shake once, and the correct answer stays lit. The streak chip turns yellow from 5 in a row and pops. Sorting shows a rubber stamp and a toast. All motion is off when the device asks for reduced motion.</div>
+  </div>
+
+  <!-- ================= EXAM RESULT ================= -->
+  <div class="col">
+    <div class="label">Mock exam result</div>
+    <div class="phone"><div class="screen">
+      <div class="appbar">
+        <div class="brand"><b>Mock exam</b></div>
+        <div class="hicons"><span><svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>
+      </div>
+      <div class="hero" style="padding-bottom:84px">
+        <p style="text-align:center">Exam done. Here's how it went.</p>
+      </div>
+      <div class="res" style="margin-top:-82px">
+        <div class="badge-big">
+          <svg width="128" height="132" viewBox="0 0 120 124">
+            <circle cx="60" cy="64" r="56" fill="#0B2A6B"/>
+            <circle cx="60" cy="60" r="56" fill="#fff"/>
+            <circle cx="60" cy="60" r="47" fill="#17A862"/>
+            <path d="M38 61 l15 15 l30 -31" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg width="40" height="40" style="position:absolute;left:-26px;top:-6px" class="sparks"><use href="#sparks"/></svg>
+          <svg width="40" height="40" style="position:absolute;right:-26px;top:-6px;transform:scaleX(-1)"><use href="#sparks"/></svg>
+        </div>
+        <div class="score">
+          <div><b>28</b><small> / 30</small></div>
+          <div class="h">You passed!</div>
+          <span class="swoosh" style="width:150px;margin:0 auto"></span>
+        </div>
+        <div class="stk lights">
+          <div><div style="font:700 15px var(--display)">18:42 used</div><div style="font-size:12px;color:var(--dim);font-weight:600">of 35:00. Plenty of time left.</div></div>
+          <div class="tl"><i></i><i></i><i class="g"></i></div>
+        </div>
+        <div style="font:600 15px var(--display)">2 to look at again</div>
+        <div class="miss">
+          <div class="stk m"><span class="x"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px;stroke-width:3.5"><path d="M6 6l12 12M18 6L6 18"/></svg></span>#2210 · Διασταυρώσεις</div>
+          <div class="stk m"><span class="x"><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px;stroke-width:3.5"><path d="M6 6l12 12M18 6L6 18"/></svg></span>#0874 · Ταχύτητα</div>
+        </div>
+        <div class="rbtns">
+          <button class="btn">Drill the 2 misses</button>
+          <button class="btn ghost">Home</button>
+        </div>
+      </div>
+    </div></div>
+    <div class="note">The result is a big sticker: a green check sign for a pass, a red stop sign for a fail. The timer reads like a traffic light.</div>
+  </div>
+
+</div>
+
+<script>
+/* ---- theme switch ---- */
+const root = document.documentElement;
+const segBtns = document.querySelectorAll(".seg button");
+function setTheme(t) {
+  root.dataset.theme = t;
+  segBtns.forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  try { localStorage.setItem("simata-mock-theme", t); } catch {}
+}
+let saved = null; try { saved = localStorage.getItem("simata-mock-theme"); } catch {}
+setTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+segBtns.forEach(b => b.addEventListener("click", () => setTheme(b.dataset.t)));
+
+/* ---- quiz demo (sample text written for the mockup, not from the bank) ---- */
+const QS = [
+  { id: "#1042 · Σήμανση", sign: "s-round", q: "Τι σημαίνει αυτή η πινακίδα;",
+    a: [["Κυκλική υποχρεωτική διαδρομή", true], ["Απαγορεύεται η αναστροφή", false], ["Τέλος κυκλικού κόμβου", false]] },
+  { id: "#0874 · Ταχύτητα", sign: "s-speed", q: "Ποιο είναι το ανώτατο όριο ταχύτητας εδώ;",
+    a: [["30 km/h", false], ["50 km/h", true], ["Όσο επιτρέπουν οι συνθήκες", false]] },
+  { id: "#0311 · Κίνδυνος", sign: "s-warn", q: "Τι πρέπει να κάνετε όταν βλέπετε αυτή την πινακίδα;",
+    a: [["Να επιταχύνετε για να περάσετε γρήγορα", false], ["Να μειώσετε ταχύτητα και να προσέχετε", true]] },
+];
+let qi = 0, answered = false, streak = 6, done = 37, tally = { H: 2, N: 5, E: 1 }, wasRight = false;
+const $ = id => document.getElementById(id);
+const sortBtns = [$("bH"), $("bE"), $("bN")];
+const check = '<svg class="ic mark" viewBox="0 0 24 24" style="stroke-width:3.2"><path d="M5 12l5 5 9-10"/></svg>';
+const cross = '<svg class="ic mark" viewBox="0 0 24 24" style="stroke-width:3.2"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+function render() {
+  const Q = QS[qi]; answered = false;
+  $("card").querySelector(".cap span").textContent = Q.id;
+  $("pic").innerHTML = `<svg width="${Q.sign === "s-warn" ? 104 : 96}" height="96"><use href="#${Q.sign}"/></svg>`;
+  $("q").textContent = Q.q;
+  $("answers").innerHTML = "";
+  Q.a.forEach(([t, ok], i) => {
+    const b = document.createElement("button");
+    b.className = "ans";
+    b.innerHTML = `<span class="k">${"ABC"[i]}</span><span>${t}</span><span class="mark"></span>`;
+    b.onclick = () => pick(i);
+    $("answers").appendChild(b);
+  });
+  $("verdict").innerHTML = "";
+  sortBtns.forEach(b => b.disabled = true);
+  const c = $("card"); c.classList.remove("in", "shake"); void c.offsetWidth; c.classList.add("in");
+}
+function pick(i) {
+  if (answered) return; answered = true;
+  const Q = QS[qi]; const els = [...$("answers").children];
+  wasRight = Q.a[i][1];
+  els.forEach((el, j) => {
+    const ok = Q.a[j][1];
+    if (ok) { el.classList.add("right"); el.querySelector(".mark").outerHTML = check; }
+    else if (j === i) { el.classList.add("wrong"); el.querySelector(".mark").outerHTML = cross; }
+    else el.classList.add("fade");
+  });
+  const c = $("card");
+  if (wasRight) {
+    streak++;
+    $("verdict").innerHTML = `<span class="chip ok">${check.replace('mark','').replace('style="','style="width:15px;height:15px;')}Correct</span><span class="chip guess" id="guess">I guessed</span>`;
+    $("guess").onclick = e => e.currentTarget.classList.toggle("on");
+  } else {
+    streak = 0;
+    c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake");
+    $("verdict").innerHTML = `<span class="chip no">Not quite. The right one is lit.</span>`;
+  }
+  const s = $("streak"); $("sN").textContent = streak;
+  s.classList.toggle("hot", streak >= 5);
+  if (wasRight && streak % 5 === 0) { s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop"); toast(`${streak} in a row!`); }
+  sortBtns.forEach(b => b.disabled = false);
+  $("bE").disabled = !wasRight;
+}
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("on"), 1400); }
+function sort(kind) {
+  if (!answered) return;
+  const label = { H: "HARD", N: "NEXT", E: "EASY" }[kind];
+  const color = { H: "var(--orange)", N: "var(--blue)", E: "var(--teal)" }[kind];
+  const st = $("stamp"); st.textContent = label; st.style.color = color; st.style.borderColor = color;
+  st.classList.remove("show"); void st.offsetWidth; st.classList.add("show");
+  tally[kind]++; $("t" + kind).textContent = tally[kind];
+  if (kind === "H") toast("Hard · you'll see it more");
+  if (kind === "E") toast("Easy · retired");
+  answered = false; sortBtns.forEach(b => b.disabled = true);
+  setTimeout(() => { qi = (qi + 1) % QS.length; render(); }, 520);
+}
+$("bH").onclick = () => sort("H"); $("bE").onclick = () => sort("E"); $("bN").onclick = () => sort("N");
+render();
+</script>

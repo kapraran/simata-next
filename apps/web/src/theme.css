@@ -1,0 +1,313 @@
+@import "@fontsource/fredoka/500.css";
+@import "@fontsource/fredoka/600.css";
+@import "@fontsource/fredoka/700.css";
+@import "@fontsource/manrope/latin-500.css";
+@import "@fontsource/manrope/latin-600.css";
+@import "@fontsource/manrope/latin-700.css";
+@import "@fontsource/manrope/latin-800.css";
+@import "@fontsource/manrope/greek-500.css";
+@import "@fontsource/manrope/greek-600.css";
+@import "@fontsource/manrope/greek-700.css";
+@import "@fontsource/manrope/greek-800.css";
+
+/* ---- tokens (from the logo) ---- */
+:root {
+  --sim-blue: #1e5bd8;
+  --sim-navy: #0b2a6b;
+  --sim-red: #e8322b;
+  --sim-yellow: #ffd21f;
+  --sim-green: #17a862;
+  --sim-orange: #f07a12;
+  --sim-teal: #0e9f99;
+  --sim-display: "Fredoka", "Manrope", system-ui, sans-serif;
+}
+:root[data-mantine-color-scheme="light"] {
+  --sim-bg: #eef4ff;
+  --sim-card: #ffffff;
+  --sim-ink: #0b2a6b;
+  --sim-dim: #4f6596;
+  --sim-line: #0b2a6b;
+  --sim-shadow: #0b2a6b;
+  --sim-track: #d5e1f7;
+  --sim-soft: #e3edff;
+  --sim-edge: #ffffff;
+}
+:root[data-mantine-color-scheme="dark"] {
+  --sim-bg: #0a1430;
+  --sim-card: #13224a;
+  --sim-ink: #eaf0ff;
+  --sim-dim: #9db0da;
+  --sim-line: #2d4685;
+  --sim-shadow: #030816;
+  --sim-track: #22376b;
+  --sim-soft: #1a2d5e;
+  --sim-edge: #d8e4ff;
+}
+:root[data-mantine-color-scheme] {
+  --mantine-color-body: var(--sim-bg);
+  --mantine-color-text: var(--sim-ink);
+  --mantine-color-dimmed: var(--sim-dim);
+  --mantine-color-default: var(--sim-card);
+  --mantine-color-default-hover: var(--sim-soft);
+  --mantine-color-default-color: var(--sim-ink);
+  --mantine-color-default-border: var(--sim-line);
+}
+body {
+  background: var(--sim-bg);
+}
+html {
+  scrollbar-gutter: stable;
+}
+
+/* ---- stickers ---- */
+.sim-sticker {
+  background: var(--sim-card);
+  border: 2.5px solid var(--sim-line);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--sim-shadow);
+}
+.sim-btn {
+  border: 2.5px solid var(--sim-line);
+  box-shadow: 0 4px 0 var(--sim-shadow);
+  font-family: var(--sim-display);
+  font-weight: 600;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.sim-btn:active:not(:disabled):not([data-disabled]) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--sim-shadow);
+}
+.sim-btn:disabled,
+.sim-btn[data-disabled] {
+  box-shadow: 0 4px 0 var(--sim-shadow);
+  opacity: 0.5;
+}
+.sim-badge {
+  border: 2px solid var(--sim-line);
+  font-family: var(--sim-display);
+  font-weight: 600;
+}
+.sim-display {
+  font-family: var(--sim-display);
+}
+.sim-swoosh {
+  display: block;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--sim-yellow);
+  transform: rotate(-2deg);
+}
+
+/* ---- app bar ---- */
+.sim-appbar {
+  background: var(--sim-blue);
+  color: #fff;
+  border-bottom: 0;
+}
+.sim-appbar .mantine-ActionIcon-root {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.sim-brand {
+  font: 700 24px var(--sim-display);
+  color: #fff;
+  text-shadow: 0 2px 0 var(--sim-navy);
+  position: relative;
+  letter-spacing: 0.01em;
+}
+.sim-brand::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 0;
+  bottom: -3px;
+  height: 4px;
+  border-radius: 9px;
+  background: var(--sim-yellow);
+  transform: rotate(-2deg);
+}
+
+/* ---- home ---- */
+.sim-hero {
+  background: var(--sim-blue);
+  color: #fff;
+  margin: calc(var(--mantine-spacing-md) * -2) calc(var(--mantine-spacing-md) * -1) 0;
+  padding: 8px 16px 64px;
+  border-radius: 0 0 36px 36px;
+  position: relative;
+  overflow: hidden;
+}
+.sim-hero::before {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 255, 255, 0.07) 0 9deg,
+    transparent 9deg 22deg
+  );
+}
+.sim-hero > * {
+  position: relative;
+}
+.sim-stat-n {
+  font: 700 22px / 1 var(--sim-display);
+}
+.sim-train {
+  height: 58px;
+  font-size: 21px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #3b7bf2, var(--sim-blue));
+}
+
+/* ---- quiz ---- */
+.sim-ans {
+  border: 2.5px solid var(--sim-line);
+  border-radius: 14px;
+  background: var(--sim-card);
+  color: var(--sim-ink);
+  box-shadow: 0 3px 0 var(--sim-shadow);
+  font-weight: 700;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s,
+    background 0.15s;
+}
+.sim-ans:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--sim-shadow);
+}
+.sim-ans[data-state="right"] {
+  background: var(--sim-green);
+  color: #fff;
+  animation: sim-bounce 0.45s;
+}
+.sim-ans[data-state="wrong"] {
+  background: var(--sim-red);
+  color: #fff;
+}
+.sim-ans[data-state="fade"] {
+  opacity: 0.55;
+}
+.sim-key {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font: 700 15px var(--sim-display);
+  background: var(--sim-soft);
+  color: var(--sim-blue);
+  border: 2px solid var(--sim-line);
+}
+.sim-ans[data-state="right"] .sim-key,
+.sim-ans[data-state="wrong"] .sim-key {
+  background: #fff;
+  color: var(--sim-navy);
+}
+.sim-shake {
+  animation: sim-shake 0.4s;
+}
+.sim-pop {
+  animation: sim-pop 0.45s;
+}
+.sim-stamp {
+  position: absolute;
+  top: 34%;
+  right: 16px;
+  z-index: 5;
+  transform: rotate(12deg);
+  font: 700 30px var(--sim-display);
+  border: 4px solid currentColor;
+  border-radius: 12px;
+  padding: 0 12px;
+  opacity: 0;
+  pointer-events: none;
+  letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.8);
+}
+.sim-stamp[data-show="true"] {
+  animation: sim-stamp 0.9s;
+}
+.sim-toast {
+  background: var(--sim-navy) !important;
+  color: #fff !important;
+  border: 2px solid var(--sim-yellow) !important;
+}
+
+@keyframes sim-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.35) rotate(-6deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes sim-bounce {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.04);
+  }
+  65% {
+    transform: scale(0.985);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes sim-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+@keyframes sim-stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(12deg) scale(1.6);
+  }
+  25% {
+    opacity: 1;
+    transform: rotate(12deg) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
