@@ -12,6 +12,7 @@ import {
 import { cachedBank, refreshBank } from "./bank";
 import { db, type LocalEvent } from "./db";
 import { type ExamResult, parseExam } from "./exams";
+import { log } from "./log";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings";
 import { type SyncState, syncNow, syncStore } from "./sync";
 
@@ -46,6 +47,14 @@ export function useSyncState(): SyncState {
 
 const EMPTY_QUESTIONS: readonly Question[] = [];
 
+/** Local reads that feed the pages. A read that never logs its line is a read that hung. */
+async function timedRead<T extends unknown[]>(name: string, read: () => Promise<T>): Promise<T> {
+  const started = Date.now();
+  const rows = await read();
+  log("data", `${name} read`, { ms: Date.now() - started, rows: rows.length });
+  return rows;
+}
+
 export function LearnerProvider({ children }: { children: ReactNode }) {
   const [bank, setBank] = useState<Bank | null>(null);
   const [bankLoaded, setBankLoaded] = useState(false);
@@ -54,7 +63,9 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let alive = true;
     void (async () => {
+      const started = Date.now();
       const cached = await cachedBank(db);
+      log("bank", "cached read", { ms: Date.now() - started, hit: cached !== null });
       if (alive && cached) setBank(cached);
       const fresh = await refreshBank(db);
       if (alive && fresh) setBank(fresh);
@@ -67,21 +78,26 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
 
   // Keep devices in step: on start, when we come back online or into view, and every minute.
   useEffect(() => {
-    const go = () => void syncNow(db);
-    go();
-    const onVisible = () => document.visibilityState === "visible" && go();
-    window.addEventListener("online", go);
+    const go = (reason: string) => {
+      log("sync", "trigger", { reason });
+      void syncNow(db);
+    };
+    go("start");
+    const onOnline = () => go("online");
+    const onVisible = () => document.visibilityState === "visible" && go("visible");
+    const onTick = () => go("interval");
+    window.addEventListener("online", onOnline);
     document.addEventListener("visibilitychange", onVisible);
-    const timer = setInterval(go, 60_000);
+    const timer = setInterval(onTick, 60_000);
     return () => {
-      window.removeEventListener("online", go);
+      window.removeEventListener("online", onOnline);
       document.removeEventListener("visibilitychange", onVisible);
       clearInterval(timer);
     };
   }, []);
 
-  const events = useLiveQuery(() => db.events.toArray(), []);
-  const kvRows = useLiveQuery(() => db.kv.toArray(), []);
+  const events = useLiveQuery(() => timedRead("events", () => db.events.toArray()), []);
+  const kvRows = useLiveQuery(() => timedRead("kv", () => db.kv.toArray()), []);
 
   const progress = useMemo(() => foldEvents(events ?? []), [events]);
   const pendingCount = useMemo(
@@ -110,8 +126,13 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
   const questions = bank?.questions ?? EMPTY_QUESTIONS;
   const byId = useMemo(() => new Map(questions.map((q) => [q.id, q])), [questions]);
 
+  const ready = (bank !== null || bankLoaded) && events !== undefined && kvRows !== undefined;
+  useEffect(() => {
+    if (ready) log("app", "data ready", { bank: bank !== null, bankLoaded });
+  }, [ready, bank, bankLoaded]);
+
   const value: Learner = {
-    ready: (bank !== null || bankLoaded) && events !== undefined && kvRows !== undefined,
+    ready,
     bank,
     noBank: bankLoaded && bank === null,
     questions,

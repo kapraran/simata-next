@@ -11,7 +11,7 @@ export type LogEntry = {
 };
 
 const KEY = "simata:log";
-const MAX = 400;
+const MAX = 1000;
 
 function read(): LogEntry[] {
   try {

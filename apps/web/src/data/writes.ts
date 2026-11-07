@@ -2,6 +2,7 @@ import type { Flag, Mode } from "@simata/core";
 import { newId } from "../lib/id";
 import { getMeta, type SimataDb, setMeta } from "./db";
 import type { ExamResult } from "./exams";
+import { log } from "./log";
 import type { Settings } from "./settings";
 import { requestSync } from "./sync";
 
@@ -26,11 +27,13 @@ export async function recordAnswer(
     deviceId: await getDeviceId(d),
     pending: 1,
   });
+  log("write", "answer saved", { questionId: a.questionId, correct: a.correct, mode: a.mode });
   requestSync(d);
 }
 
 async function putKv(d: SimataDb, key: string, value: string) {
   await d.kv.put({ key, value, updatedAt: Date.now(), dirty: 1 });
+  log("write", "setting saved", { key });
   requestSync(d);
 }
 

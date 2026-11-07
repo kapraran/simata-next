@@ -1,5 +1,6 @@
 import type { AnswerEvent } from "@simata/core";
 import Dexie, { type EntityTable } from "dexie";
+import { log } from "./log";
 
 /** Booleans can't be indexed in IndexedDB, so "not yet pushed" is 1/0. */
 export type LocalEvent = AnswerEvent & { pending: 0 | 1 };
@@ -18,6 +19,10 @@ export class SimataDb extends Dexie {
       kv: "key, dirty",
       meta: "key",
     });
+    const started = Date.now();
+    this.on("ready", () => log("db", `${name} open`, { msSinceCreated: Date.now() - started }));
+    this.on("blocked", () => log("db", `${name} blocked by another open connection`));
+    this.on("versionchange", () => log("db", `${name} version change requested`));
   }
 }
 

@@ -4,6 +4,8 @@ import { log } from "./log";
 
 type Cached = { etag: string; bank: Bank };
 
+const FETCH_TIMEOUT_MS = 15_000;
+
 /** The bank stored on this device, if any. Works offline. */
 export async function cachedBank(d: SimataDb): Promise<Bank | null> {
   return (await getMeta<Cached | null>(d, "bank", null))?.bank ?? null;
@@ -16,6 +18,7 @@ export async function refreshBank(d: SimataDb, f: typeof fetch = fetch): Promise
   try {
     const res = await f("/api/bank", {
       headers: cached ? { "If-None-Match": cached.etag } : {},
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (res.status === 304 && cached) {
       log("bank", "not modified");

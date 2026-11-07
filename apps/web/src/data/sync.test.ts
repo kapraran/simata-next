@@ -168,6 +168,14 @@ describe("syncNow", () => {
     expect(server.kv.get("flag:Q1")?.value).toBe("easy");
   });
 
+  it("gives up on a run that never finishes and lets the next one through", async () => {
+    const d = fresh();
+    await answer(d);
+    const hung = (() => new Promise<Response>(() => {})) as unknown as typeof fetch;
+    expect(await syncNow(d, hung, 50)).toMatchObject({ ok: false });
+    expect(await syncNow(d, server.fetchImpl)).toMatchObject({ ok: true, pushed: 1 });
+  });
+
   it("records the server cursor", async () => {
     const d = fresh();
     await answer(d);

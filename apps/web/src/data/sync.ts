@@ -24,6 +24,9 @@ type SyncResponse = {
 
 const PUSH_LIMIT = 500;
 const MAX_ROUNDS = 50;
+/** A whole sync run gives up after this, so a stuck run can't block the next attempt. */
+const SYNC_TIMEOUT_MS = 20_000;
+const FETCH_TIMEOUT_MS = 15_000;
 
 let current: SyncState = { state: "idle" };
 const listeners = new Set<() => void>();
@@ -51,15 +54,32 @@ function strip(e: LocalEvent): AnswerEvent {
  * Push local changes and pull everyone else's. Safe to call any time and any number of times:
  * concurrent calls share one run, and the server ignores events it already has.
  */
-export function syncNow(d: SimataDb, f: typeof fetch = fetch): Promise<SyncResult> {
+export function syncNow(
+  d: SimataDb,
+  f: typeof fetch = fetch,
+  timeoutMs = SYNC_TIMEOUT_MS,
+): Promise<SyncResult> {
   const running = inflight.get(d);
   if (running) {
     log("sync", "joined a sync already running");
     return running;
   }
-  const run = doSync(d, f).finally(() => inflight.delete(d));
+  const run = withDeadline(doSync(d, f), timeoutMs, () => {
+    const error = "sync timed out";
+    log("sync", "timed out; the next trigger starts a fresh run", { timeoutMs });
+    set({ ...current, state: "error", error });
+    return { ok: false, error } as const;
+  }).finally(() => inflight.delete(d));
   inflight.set(d, run);
   return run;
+}
+
+function withDeadline<T>(p: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(onTimeout()), ms);
+  });
+  return Promise.race([p, deadline]).finally(() => clearTimeout(timer));
 }
 
 async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
@@ -70,6 +90,7 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
   log("sync", "start");
   try {
     for (let round = 0; round < MAX_ROUNDS; round++) {
+      const readStart = Date.now();
       const cursor = await getMeta(d, "cursor", 0);
       const kvRev = await getMeta(d, "kvRev", 0);
       const pending = await d.events.where("pending").equals(1).limit(PUSH_LIMIT).toArray();
@@ -79,11 +100,13 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
         kvRev,
         pushEvents: pending.length,
         pushKv: dirty.length,
+        readMs: Date.now() - readStart,
       });
 
       const res = await f("/api/sync", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         body: JSON.stringify({
           cursor,
           kvRev,
@@ -100,6 +123,7 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
         hasMore: data.hasMore,
       });
 
+      const applyStart = Date.now();
       await d.transaction("rw", d.events, d.kv, d.meta, async () => {
         // What we pushed is now on the server.
         await d.events
@@ -125,6 +149,7 @@ async function doSync(d: SimataDb, f: typeof fetch): Promise<SyncResult> {
         await setMeta(d, "cursor", data.cursor);
         await setMeta(d, "kvRev", data.kvRev);
       });
+      log("sync", `round ${round} applied`, { ms: Date.now() - applyStart });
 
       pushed += pending.length;
       pulled += data.events.length;
