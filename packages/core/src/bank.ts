@@ -14,7 +14,9 @@ export type Question = {
   options: RawOption[];
   /** Blob key of the image, e.g. "media/<sha256>.jpg". */
   image?: string;
-  /** True when the question can't be shown right (e.g. its image is lost). */
+  /** The raw question had a picture, but the file is lost. Shown with a placeholder. */
+  imageMissing?: true;
+  /** True when the question can't be shown at all (e.g. it fails validation). */
   disabled?: true;
 };
 
@@ -56,7 +58,7 @@ export function mentionsPicture(text: string): boolean {
 
 export type BuildResult = {
   bank: Bank;
-  disabled: { id: string; reason: string }[];
+  missingImages: { id: string; reason: string }[];
   invalid: { id: string; problems: string[] }[];
   suspicious: { id: string; reason: string }[];
 };
@@ -70,7 +72,7 @@ export function buildBank(
   imageAvailable: ReadonlySet<string>,
   version: string,
 ): BuildResult {
-  const disabled: BuildResult["disabled"] = [];
+  const missingImages: BuildResult["missingImages"] = [];
   const invalid: BuildResult["invalid"] = [];
   const suspicious: BuildResult["suspicious"] = [];
   const seen = new Set<string>();
@@ -87,8 +89,11 @@ export function buildBank(
       const hash = imageHashFromUrl(r.image);
       if (hash && imageAvailable.has(hash)) q.image = mediaKey(hash);
       else {
-        q.disabled = true;
-        disabled.push({ id: r.id, reason: hash ? "image file missing" : "unparseable image url" });
+        q.imageMissing = true;
+        missingImages.push({
+          id: r.id,
+          reason: hash ? "image file missing" : "unparseable image url",
+        });
       }
     } else if (mentionsPicture(r.text)) {
       suspicious.push({ id: r.id, reason: "text mentions a picture but no image" });
@@ -102,5 +107,5 @@ export function buildBank(
   }
 
   const categories = [...new Set(questions.map((q) => q.category))];
-  return { bank: { version, categories, questions }, disabled, invalid, suspicious };
+  return { bank: { version, categories, questions }, missingImages, invalid, suspicious };
 }

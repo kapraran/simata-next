@@ -32,11 +32,12 @@ export function SettingsPage() {
             onChange={(v) => typeof v === "number" && update({ newPerDay: v })}
           />
           <NumberInput
-            label="Questions per round"
-            min={3}
-            max={50}
-            value={settings.sessionSize}
-            onChange={(v) => typeof v === "number" && update({ sessionSize: v })}
+            label="Daily goal"
+            description="Answers per day. Shown as a bar while you train."
+            min={5}
+            max={500}
+            value={settings.dailyGoal}
+            onChange={(v) => typeof v === "number" && update({ dailyGoal: v })}
           />
           <Switch
             label="Move on by itself after a right answer"

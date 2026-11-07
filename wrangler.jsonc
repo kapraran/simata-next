@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simata-next",
+  "main": "apps/api/src/worker.ts",
+  "compatibility_date": "2026-01-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "simata.kapraran.dev", "custom_domain": true }],
+  "vars": {
+    // "open" = no login (one shared user). Switch to "access" once the Cloudflare Access
+    // application exists and TEAM_DOMAIN + ACCESS_AUD are set below.
+    "IDENTITY": "open",
+    "TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "simata-next",
+      "database_id": "196e9209-8aae-421a-a253-1a58b0484d9f",
+      "migrations_dir": "apps/api/migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "simata-media" }],
+  "assets": {
+    "directory": "apps/web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": { "enabled": true }
+}

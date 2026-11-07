@@ -20,7 +20,13 @@ import {
   type Question,
   shuffle,
 } from "@simata/core";
-import { IconClipboardCheck, IconHome, IconPlayerPlay, IconRepeat } from "@tabler/icons-react";
+import {
+  IconClipboardCheck,
+  IconHome,
+  IconPhotoOff,
+  IconPlayerPlay,
+  IconRepeat,
+} from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { imageUrl } from "../data/bank";
@@ -205,6 +211,12 @@ function ExamQuestion({
           mah={240}
           radius="md"
         />
+      )}
+      {q.imageMissing && (
+        <Group gap="xs" c="orange">
+          <IconPhotoOff size={16} />
+          <Text size="sm">Picture lost — answer without it.</Text>
+        </Group>
       )}
       <Stack gap="xs">
         {options.map((o, i) => (

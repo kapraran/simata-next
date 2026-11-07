@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simata · appearance rethink</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #0d0e12; color: #16130f; font-family: "Inter", system-ui, sans-serif; padding: 28px 20px 80px; }
+
+  /* ---------- page chrome ---------- */
+  .top { max-width: 1240px; margin: 0 auto 18px; color: #ececf2; }
+  .top h1 { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 30px; margin: 0 0 6px; letter-spacing: -.02em; }
+  .top p { margin: 0; color: #9a9aac; font-size: 14px; max-width: 800px; line-height: 1.6; }
+  .switcher { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px auto 30px; max-width: 1240px; }
+  .switcher button {
+    font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; text-align: left;
+    border: 1px solid #2a2b38; padding: 11px 18px; border-radius: 12px; color: #b7b7c6; background: #171821;
+    transition: all .16s; display: inline-flex; align-items: center; gap: 10px;
+  }
+  .switcher button .dot { width: 14px; height: 14px; border-radius: 5px; flex: none; }
+  .switcher button .sub { display: block; font-size: 11px; font-weight: 500; color: #7c7c90; margin-top: 1px; }
+  .switcher button:hover { border-color: #3a3b4c; color: #e4e4ee; }
+  .switcher button.on { color: #fff; background: #23242f; border-color: #4a4b5e; box-shadow: 0 0 0 3px rgba(120,140,255,.12); }
+  .switcher button.on .sub { color: #b9b9cc; }
+
+  .stage { display: flex; gap: 30px; overflow-x: auto; padding: 4px 4px 26px; max-width: 1240px; margin: 0 auto; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .col .label { color: #cfcfe0; font-weight: 700; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+
+  .phone { width: 340px; height: 700px; flex: none; border-radius: 40px; padding: 10px; background: #000; box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 0 0 2px #2b2b3a; position: relative; }
+  .screen { width: 100%; height: 100%; border-radius: 32px; overflow: hidden; position: relative; display: flex; flex-direction: column; color: var(--ink); }
+  .notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 92px; height: 6px; border-radius: 6px; background: rgba(0,0,0,.22); z-index: 9; }
+
+  .footnote { max-width: 1240px; margin: 22px auto 0; color: #9a9aac; font-size: 13px; line-height: 1.7; }
+  .footnote b { color: #dcdce8; }
+  .footnote .two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  /* =========================================================================
+     DIRECTION A — "THE LONG ROAD"
+     Warm editorial paper, a journey metaphor, hand-drawn road & stamps.
+     ========================================================================= */
+  .screen.road {
+    --paper: #fbf7ef; --card: #fffdf8; --ink: #23201a; --muted: #8a8071;
+    --line: #e7ddca; --green: #1f6b55; --green-soft: #e3f2ea;
+    --terra: #c9583a; --terra-soft: #fbe9e2; --gold: #e7b54a; --blue: #35648c;
+    background: var(--paper); font-family: "Inter", sans-serif;
+  }
+  .road .appbar { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 8px; }
+  .road .brand { display: flex; align-items: center; gap: 8px; font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -.02em; }
+  .road .brand .wm { width: 24px; height: 24px; color: var(--green); }
+  .road .appbar .icons { display: flex; gap: 6px; }
+  .road .ib { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); }
+  .road .ib svg { width: 19px; height: 19px; }
+  .road .body { flex: 1; min-height: 0; padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 13px; overflow: hidden; }
+  .road .body.scroll { overflow-y: auto; }
+  .road .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 1px 0 rgba(35,32,26,.03), 0 10px 24px -18px rgba(35,32,26,.5); }
+
+  .road .eyebrow { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 25px; letter-spacing: -.02em; line-height: 1.1; }
+  .road .sub { font-size: 12.5px; color: var(--muted); font-weight: 500; margin-top: 3px; }
+  .road .sub b { color: var(--ink); font-weight: 700; }
+
+  .road .hero { padding: 15px 15px 8px; }
+  .road .hero-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .road .hero-k { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .road .hero-n { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 52px; line-height: .95; letter-spacing: -.03em; }
+  .road .hero-n small { font-size: 20px; font-weight: 700; color: var(--muted); }
+  .road .hero-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--green-soft); color: var(--green); font-weight: 700; font-size: 11.5px; padding: 5px 10px; border-radius: 999px; }
+  .road .hero-badge svg { width: 12px; height: 12px; }
+  .road .hero svg.roadmap { width: 100%; height: 92px; margin: 2px 0 -2px; display: block; }
+  .road .road-labels { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .road .road-labels b { color: var(--green); }
+
+  .road .route { display: flex; flex-direction: column; }
+  .road .route-h { display: flex; align-items: baseline; justify-content: space-between; }
+  .road .route-h .t { font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+  .road .route-h .m { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .road .stops { position: relative; margin-top: 4px; }
+  .road .stops::before { content: ""; position: absolute; left: 17px; top: 20px; bottom: 22px; border-left: 2px dashed var(--line); }
+  .road .stop { position: relative; display: flex; align-items: center; gap: 12px; padding: 7px 0; }
+  .road .node { position: relative; z-index: 1; width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--card); border: 1.5px solid var(--line); color: var(--muted); }
+  .road .node svg { width: 17px; height: 17px; }
+  .road .stop.hot .node { background: var(--green); border-color: var(--green); color: #fff; box-shadow: 0 0 0 4px var(--green-soft); }
+  .road .stop-main { flex: 1; min-width: 0; }
+  .road .stop-t { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 7px; }
+  .road .stop-s { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+  .road .tag { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--terra); background: var(--terra-soft); padding: 2px 7px; border-radius: 999px; }
+  .road .go { flex: none; font-size: 12.5px; font-weight: 700; color: var(--green); display: inline-flex; align-items: center; gap: 4px; }
+  .road .go svg { width: 14px; height: 14px; }
+  .road .stop.hot .go { background: var(--green); color: #fff; padding: 6px 11px; border-radius: 999px; }
+  .road .stop.hot .go svg { width: 13px; height: 13px; }
+
+  /* road quiz */
+  .road .qbody { flex: 1; min-height: 0; padding: 6px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .road .strip { display: flex; align-items: center; gap: 9px; flex: none; }
+  .road .stopbtn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--card); border: 1px solid var(--line); color: var(--ink); cursor: pointer; }
+  .road .stopbtn svg { width: 13px; height: 13px; }
+  .road .goal { flex: 1; height: 8px; border-radius: 999px; background: #ece3d2; overflow: hidden; }
+  .road .goal > i { display: block; height: 100%; width: 64%; border-radius: 999px; background: var(--green); }
+  .road .gnum { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .road .streak { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 800; color: var(--terra); background: var(--terra-soft); padding: 4px 9px; border-radius: 999px; }
+  .road .streak svg { width: 12px; height: 12px; }
+
+  .road .deckwrap { position: relative; flex: 1; min-height: 0; display: flex; }
+  .road .deckwrap::before, .road .deckwrap::after { content: ""; position: absolute; inset: 6px 4px 0; border-radius: 18px; background: #f3ecdd; border: 1px solid var(--line); }
+  .road .deckwrap::before { transform: rotate(-2deg) translateY(2px); }
+  .road .deckwrap::after { transform: rotate(1.4deg) translateY(4px); background: #f7f1e4; }
+  .road .qcard { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 26px -16px rgba(35,32,26,.55); overflow: hidden; }
+  .road .tape { position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(-1.5deg); width: 108px; height: 24px; background: rgba(231,181,74,.32); border-left: 1px dashed rgba(35,32,26,.12); border-right: 1px dashed rgba(35,32,26,.12); }
+  .road .stamp { position: absolute; top: 14px; right: 12px; z-index: 4; width: 62px; height: 62px; border-radius: 50%; border: 2.5px solid var(--green); color: var(--green); display: grid; place-items: center; transform: rotate(11deg); font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 12px; line-height: 1; text-align: center; letter-spacing: .02em; background: rgba(255,253,248,.85); animation: slap .34s cubic-bezier(.2,1.5,.4,1) both; }
+  @keyframes slap { 0% { transform: rotate(11deg) scale(1.9); opacity: 0; } 70% { transform: rotate(11deg) scale(.94); opacity: 1; } 100% { transform: rotate(11deg) scale(1); } }
+  .road .qmeta { display: flex; align-items: center; justify-content: space-between; }
+  .road .qid { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
+  .road .tools { display: flex; gap: 2px; }
+  .road .tool { width: 28px; height: 28px; display: grid; place-items: center; color: var(--muted); border-radius: 8px; }
+  .road .tools svg { width: 15px; height: 15px; }
+  .road .imgslot { height: 118px; border-radius: 12px; background: #f6f0e4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .road .imgslot svg.art { width: 96px; opacity: .9; }
+  .road .imgslot .cap { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+  .road .qtext { font-family: "Bricolage Grotesque", sans-serif; font-size: 18.5px; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; }
+  .road .answers { display: flex; flex-direction: column; gap: 7px; margin-top: auto; }
+  .road .ans { display: flex; align-items: center; gap: 11px; min-height: 48px; padding: 0 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; text-align: left; font: inherit; font-weight: 600; font-size: 14px; color: var(--ink); cursor: pointer; }
+  .road .ans .n { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--muted); }
+  .road .ans .t { flex: 1; line-height: 1.25; }
+  .road .ans .m { width: 18px; flex: none; display: grid; place-items: center; }
+  .road .ans .m svg { width: 18px; height: 18px; }
+  .road .ans.right { background: var(--green-soft); border-color: #b9ddcb; color: #14503f; }
+  .road .ans.right .n { background: var(--green); border-color: var(--green); color: #fff; }
+  .road .ans.wrong { background: var(--terra-soft); border-color: #f0cdbf; color: #8f3d27; }
+  .road .ans.wrong .n { background: var(--terra); border-color: var(--terra); color: #fff; }
+  .road .ans.dim { opacity: .5; }
+  .road .sortbar { display: grid; grid-template-columns: 1fr 1fr 1.7fr; gap: 8px; flex: none; }
+  .road .sbtn { min-height: 52px; border-radius: 13px; cursor: pointer; font: inherit; font-weight: 700; font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: 1px solid var(--line); background: var(--card); color: var(--muted); }
+  .road .sbtn svg { width: 17px; height: 17px; }
+  .road .sbtn.hard { color: var(--terra); border-color: #eed3c7; background: var(--terra-soft); }
+  .road .sbtn.easy { color: var(--green); border-color: #c6e3d5; background: var(--green-soft); }
+  .road .sbtn.big { flex-direction: row; gap: 8px; font-size: 15px; background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* road summary */
+  .road .log { padding: 16px 16px 14px; background: repeating-linear-gradient(180deg, transparent 0 33px, var(--line) 33px 34px); border-radius: 16px 16px 4px 4px; position: relative; }
+  .road .log::before { content: ""; position: absolute; top: -6px; left: 10px; right: 10px; height: 12px; background: radial-gradient(circle at 6px 0, transparent 5px, var(--paper) 5px) repeat-x; background-size: 12px 12px; }
+  .road .log-k { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+  .road .log-n { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 54px; line-height: 1; letter-spacing: -.03em; }
+  .road .log-line { display: flex; align-items: baseline; justify-content: space-between; height: 34px; font-size: 13.5px; font-weight: 600; }
+  .road .log-line span:last-child { font-family: "Space Grotesk", monospace; font-weight: 600; }
+  .road .stamps { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+  .road .pstamp { border: 2px solid var(--green); color: var(--green); border-radius: 8px; padding: 4px 10px; font-weight: 800; font-size: 11.5px; transform: rotate(-2deg); text-transform: uppercase; letter-spacing: .05em; }
+  .road .pstamp.gold { border-color: var(--gold); color: #a97c12; transform: rotate(1.5deg); }
+  .road .piles { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .road .pile { padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); display: flex; flex-direction: column; gap: 1px; }
+  .road .pile .ph { display: flex; justify-content: space-between; align-items: baseline; }
+  .road .pile .pn { font-family: "Bricolage Grotesque", sans-serif; font-size: 26px; font-weight: 800; }
+  .road .pile .pw { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+
+  /* =========================================================================
+     DIRECTION B — "DECK"
+     Bold colour-blocking, editorial display type, a real card-deck feel.
+     ========================================================================= */
+  .screen.deck {
+    --paper: #f1efe8; --card: #ffffff; --ink: #141414; --muted: #726f66;
+    --line: #ddd8cc; --blue: #2b4dff; --blue-soft: #e6eaff;
+    --acid: #cbf24e; --coral: #ff6a55; --coral-soft: #ffe8e3;
+    --violet: #7c5cff; --violet-soft: #ece7ff;
+    background: var(--paper); font-family: "Space Grotesk", sans-serif;
+  }
+  .deck .appbar { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 6px; }
+  .deck .brand { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 18px; letter-spacing: -.02em; }
+  .deck .brand .wm { width: 22px; height: 22px; }
+  .deck .appbar .icons { display: flex; gap: 6px; }
+  .deck .ib { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); }
+  .deck .ib svg { width: 18px; height: 18px; }
+  .deck .body { flex: 1; min-height: 0; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+  .deck .body.scroll { overflow-y: auto; }
+
+  .deck .kicker { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: var(--muted); }
+  .deck .headline { font-weight: 700; font-size: 34px; line-height: .98; letter-spacing: -.04em; }
+  .deck .headline .big { display: block; font-weight: 700; font-size: 76px; line-height: .82; letter-spacing: -.06em; }
+  .deck .headline .big em { font-style: normal; color: var(--blue); }
+
+  .deck .chancecard { padding: 14px; border-radius: 16px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden; }
+  .deck .chancecard::after { content: ""; position: absolute; right: -34px; top: -34px; width: 120px; height: 120px; border: 20px solid rgba(255,255,255,.14); border-radius: 50%; }
+  .deck .chancecard .ck { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; opacity: .8; }
+  .deck .chancecard .cn { font-size: 46px; font-weight: 700; line-height: .95; letter-spacing: -.03em; }
+  .deck .chancecard .cs { font-size: 11.5px; font-weight: 600; opacity: .85; max-width: 120px; line-height: 1.35; }
+  .deck .chancecard .mini { display: flex; flex-direction: column; gap: 3px; text-align: right; }
+
+  .deck .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .deck .mode { border-radius: 16px; padding: 13px; display: flex; flex-direction: column; justify-content: space-between; min-height: 92px; position: relative; overflow: hidden; cursor: pointer; }
+  .deck .mode.tall { grid-column: 1 / -1; min-height: 96px; flex-direction: row; align-items: center; }
+  .deck .mode .mk { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; opacity: .9; }
+  .deck .mode .mn { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -.03em; }
+  .deck .mode .ma { font-size: 11.5px; font-weight: 600; opacity: .8; }
+  .deck .mode .arrow { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.22); }
+  .deck .mode .arrow svg { width: 18px; height: 18px; }
+  .deck .mode.blue { background: var(--blue); color: #fff; }
+  .deck .mode.acid { background: var(--acid); color: #1c2300; }
+  .deck .mode.ink { background: var(--ink); color: #fff; }
+  .deck .mode.coral { background: var(--coral); color: #33100b; }
+
+  .deck .ticker { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); overflow: hidden; white-space: nowrap; }
+  .deck .ticker b { color: var(--ink); }
+  .deck .ticker .sep { opacity: .35; }
+
+  /* deck quiz */
+  .deck .qbody { flex: 1; min-height: 0; padding: 6px 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .deck .toprow { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+  .deck .stopbtn { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--ink); color: #fff; cursor: pointer; }
+  .deck .stopbtn svg { width: 12px; height: 12px; }
+  .deck .idx { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--muted); }
+  .deck .idx b { color: var(--ink); }
+  .deck .streak { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #7a5a00; background: var(--acid); padding: 4px 10px; border-radius: 999px; }
+  .deck .streak svg { width: 12px; height: 12px; }
+
+  .deck .deckwrap { position: relative; flex: 1; min-height: 0; display: flex; padding-top: 6px; }
+  .deck .deckwrap::before, .deck .deckwrap::after { content: ""; position: absolute; left: 12px; right: 12px; height: 100%; border-radius: 20px; background: var(--card); border: 1px solid var(--line); }
+  .deck .deckwrap::before { top: -6px; transform: scale(.94); background: var(--blue-soft); }
+  .deck .deckwrap::after { top: -3px; transform: scale(.97); }
+  .deck .qcard { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 16px 14px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 14px 30px -20px rgba(0,0,0,.5); overflow: hidden; }
+  .deck .qcard .tab { position: absolute; top: 0; right: 16px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .1em; padding: 4px 9px 5px; border-radius: 0 0 7px 7px; }
+  .deck .qid { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
+  .deck .tools { display: flex; gap: 2px; }
+  .deck .tool { width: 28px; height: 28px; display: grid; place-items: center; color: var(--muted); border-radius: 8px; }
+  .deck .tools svg { width: 15px; height: 15px; }
+  .deck .qmeta { display: flex; align-items: center; justify-content: space-between; }
+  .deck .imgslot { height: 112px; border-radius: 12px; background: #f4f2ec; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .deck .imgslot svg.art { width: 92px; }
+  .deck .imgslot .cap { font-size: 10.5px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+  .deck .qtext { font-size: 20px; font-weight: 600; line-height: 1.22; letter-spacing: -.02em; }
+  .deck .answers { display: flex; flex-direction: column; gap: 7px; margin-top: auto; }
+  .deck .ans { display: flex; align-items: center; gap: 11px; min-height: 48px; padding: 0 13px; background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; text-align: left; font: inherit; font-weight: 600; font-size: 14px; color: var(--ink); cursor: pointer; }
+  .deck .ans .n { width: 21px; height: 21px; flex: none; border-radius: 6px; background: var(--card); border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+  .deck .ans .t { flex: 1; line-height: 1.22; }
+  .deck .ans .m { width: 18px; flex: none; display: grid; place-items: center; }
+  .deck .ans .m svg { width: 18px; height: 18px; }
+  .deck .ans.right { background: var(--acid); border-color: #9bbf16; color: #1c2300; }
+  .deck .ans.right .n { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .deck .ans.wrong { background: var(--coral); border-color: #d8432f; color: #33100b; }
+  .deck .ans.wrong .n { background: #7a1f12; border-color: #7a1f12; color: #fff; }
+  .deck .ans.dim { opacity: .45; }
+  .deck .sortbar { display: grid; grid-template-columns: 1fr 1fr 1.7fr; gap: 8px; flex: none; }
+  .deck .sbtn { min-height: 52px; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 700; font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); }
+  .deck .sbtn svg { width: 17px; height: 17px; }
+  .deck .sbtn.hard { color: #a33f2c; border-color: #f0c9c0; background: var(--coral-soft); }
+  .deck .sbtn.easy { color: #4d7a00; border-color: #dceda0; background: #f2fbd2; }
+  .deck .sbtn.big { flex-direction: row; gap: 8px; font-size: 15px; background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* deck summary */
+  .deck .score { display: flex; align-items: flex-end; gap: 12px; }
+  .deck .score .sn { font-size: 84px; font-weight: 700; line-height: .8; letter-spacing: -.06em; }
+  .deck .score .sc { padding-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.35; }
+  .deck .score .sc b { color: var(--ink); font-weight: 700; }
+  .deck .seg { display: flex; height: 12px; border-radius: 999px; overflow: hidden; gap: 2px; }
+  .deck .seg > i { display: block; height: 100%; }
+  .deck .legend { display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .deck .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .deck .block { border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 1px; }
+  .deck .block .bk { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .75; }
+  .deck .block .bn { font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -.03em; }
+  .deck .block .bw { font-size: 10px; font-weight: 600; opacity: .7; }
+  .deck .bigbtn { border-radius: 14px; min-height: 52px; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: 0; background: var(--ink); color: #fff; font-family: inherit; }
+  .deck .bigbtn svg { width: 18px; height: 18px; }
+  .deck .btnrow { display: flex; gap: 9px; }
+  .deck .btnrow .bigbtn { flex: 1; background: var(--card); color: var(--ink); border: 1.5px solid var(--line); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Simata — rethink the look, not just the theme</h1>
+  <p>Two full appearance systems. Each changes the layout language, typography, card mechanics and illustration — not only the colour. Same screens and same rules underneath.</p>
+</div>
+
+<div class="switcher" id="switcher"></div>
+<div class="stage" id="stage"></div>
+
+<div class="footnote">
+  <div class="grid2">
+    <p><b>A · The Long Road.</b> Turns the app into a journey to the test. A warm paper palette, a hand-drawn road with the car where you are and the exam as the destination, today's practice as a vertical route of stops, and the quiz as a real paper flashcard (taped, slightly askew, with a "NICE" stamp when you get one). The summary is a trip log on ruled paper.</p>
+    <p><b>B · Deck.</b> Treats the question bank as a physical deck. Bright colour blocks, huge editorial numbers, mode cards instead of buttons, and a quiz card that visibly sits on a stack with an index tab. The summary is a scoreboard. Playful through scale, colour and card mechanics.</p>
+  </div>
+  <p style="margin-top:14px">Both keep: answer-first/sort-second, thumb-reach sort bar, semantic colours in spirit (orange→hard, teal/green→easy, violet→guessed), streak, run summary, and the "no picture" slot. The main question is which <em>language</em> fits Simata.</p>
+</div>
+
+<script>
+const I = {
+  wheel: `<svg class="wm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M4.2 16l5.2-3M19.8 16l-5.2-3"/></svg>`,
+  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+  cog: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>`,
+  play: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>`,
+  stop: `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`,
+  flame: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-3-2 1-4 3-4 6a7 7 0 0 0 14 0c0-5-7-11-7-11z"/></svg>`,
+  bolt: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`,
+  cross: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  left: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>`,
+  right: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`,
+  feather: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C13 4 8 9 6 14l-2 6 6-2c5-2 10-7 10-14z"/><path d="M6 18L18 6"/></svg>`,
+  note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12l-4 4H4z"/><path d="M8 9h8M8 13h5"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>`,
+  clipboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg>`,
+  flag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>`,
+  demo: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg>`,
+};
+
+/* --- line-art car for the no-picture slot --- */
+function carLine(color){
+  return `<svg class="art" viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 84h164M46 84c0-6 5-11 11-11h106c6 0 11 5 11 11"/>
+    <path d="M60 73c4-16 20-25 50-25s46 9 50 25"/>
+    <path d="M74 71c3-10 15-16 36-16s33 6 36 16"/>
+    <circle cx="70" cy="96" r="13"/><circle cx="150" cy="96" r="13"/>
+    <path d="M96 62h28" stroke-width="4"/>
+  </svg>`;
+}
+
+/* --- the road map --- */
+function roadmap(){
+  return `<svg class="roadmap" viewBox="0 0 320 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M14 70 C 78 70, 84 34, 150 34 S 232 70, 300 46" stroke="#ece3d2" stroke-width="16" stroke-linecap="round"/>
+    <path d="M14 70 C 78 70, 84 34, 150 34 S 232 70, 300 46" stroke="#d8c9a8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="7 9"/>
+    <circle cx="14" cy="70" r="5" fill="#1f6b55"/>
+    <circle cx="150" cy="34" r="5" fill="#e7b54a"/>
+    <circle cx="300" cy="46" r="6" fill="#23201a"/>
+    <path d="M300 46V22" stroke="#23201a" stroke-width="2" stroke-linecap="round"/>
+    <path d="M300 22h16l-4 5 4 5h-16z" fill="#c9583a" stroke="#c9583a" stroke-width="1"/>
+    <g transform="translate(196 26) rotate(6)">
+      <rect x="0" y="6" width="26" height="13" rx="5" fill="#1f6b55"/>
+      <circle cx="6" cy="20" r="4" fill="#23201a"/><circle cx="20" cy="20" r="4" fill="#23201a"/>
+    </g>
+  </svg>`;
+}
+
+const roadAppbar = `
+  <div class="appbar">
+    <div class="brand">${I.wheel}Simata</div>
+    <div class="icons"><div class="ib">${I.chart}</div><div class="ib">${I.cog}</div></div>
+  </div>`;
+
+function roadHome(){
+  return `
+  ${roadAppbar}
+  <div class="body scroll">
+    <div>
+      <div class="eyebrow">Today's drive</div>
+      <div class="sub"><b>7 new</b> · 23 due · 41 to review</div>
+    </div>
+
+    <div class="card hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-k">Chance to pass</div>
+          <div class="hero-n">70<small>%</small></div>
+        </div>
+        <div class="hero-badge">${I.bolt} up 6 this week</div>
+      </div>
+      ${roadmap()}
+      <div class="road-labels"><span>Start</span><span>You are here</span><b>Exam · 12 Mar</b></div>
+    </div>
+
+    <div class="route">
+      <div class="route-h"><span class="t">Today's route</span><span class="m">≈ 18 min</span></div>
+      <div class="stops">
+        <div class="stop hot">
+          <span class="node">${I.play}</span>
+          <div class="stop-main"><div class="stop-t">Train <span class="tag">best next</span></div><div class="stop-s">23 due · 7 new</div></div>
+          <span class="go">Go ${I.right}</span>
+        </div>
+        <div class="stop">
+          <span class="node">${I.search}</span>
+          <div class="stop-main"><div class="stop-t">Sweep</div><div class="stop-s">See every question once</div></div>
+          <span class="go">${I.right}</span>
+        </div>
+        <div class="stop">
+          <span class="node">${I.bolt}</span>
+          <div class="stop-main"><div class="stop-t">Weak spots</div><div class="stop-s">41 to review</div></div>
+          <span class="go">${I.right}</span>
+        </div>
+        <div class="stop">
+          <span class="node">${I.clipboard}</span>
+          <div class="stop-main"><div class="stop-t">Mock exam</div><div class="stop-s">Full test · 40 questions</div></div>
+          <span class="go">${I.right}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function roadQuiz(){
+  return `
+  ${roadAppbar}
+  <div class="qbody">
+    <div class="strip">
+      <button class="stopbtn">${I.stop}</button>
+      <div class="goal"><i></i></div>
+      <span class="gnum">32/50</span>
+      <span class="streak">${I.flame} 4</span>
+    </div>
+
+    <div class="deckwrap">
+      <div class="qcard">
+        <div class="tape"></div>
+        <div class="stamp">NICE!</div>
+        <div class="qmeta">
+          <span class="qid">Q-142</span>
+          <div class="tools"><div class="tool">${I.flame}</div><div class="tool">${I.feather}</div><div class="tool">${I.note}</div></div>
+        </div>
+        <div class="imgslot">
+          ${carLine('#c2b49a')}
+          <div class="cap">No picture for this one — answer away</div>
+        </div>
+        <div class="qtext">What must you do when you see this sign?</div>
+        <div class="answers">
+          <button class="ans right"><span class="n">1</span><span class="t">Give way to traffic on the major road</span><span class="m">${I.check}</span></button>
+          <button class="ans dim"><span class="n">2</span><span class="t">Stop and wait for a signal</span><span class="m"></span></button>
+          <button class="ans wrong"><span class="n">3</span><span class="t">Speed up to clear the junction</span><span class="m">${I.cross}</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sortbar">
+      <button class="sbtn hard">${I.left}<span>Hard</span></button>
+      <button class="sbtn easy">${I.up}<span>Easy</span></button>
+      <button class="sbtn big">Next ${I.right}</button>
+    </div>
+  </div>`;
+}
+
+function roadSummary(){
+  return `
+  ${roadAppbar}
+  <div class="body scroll">
+    <div class="log">
+      <div class="log-k">Trip log · stopped after</div>
+      <div class="log-n">24</div>
+      <div class="log-line"><span>answered</span><span>24</span></div>
+      <div class="log-line"><span>right</span><span>21 (87%)</span></div>
+      <div class="log-line"><span>average</span><span>3.4 s</span></div>
+      <div class="log-line"><span>today</span><span>32 / 50</span></div>
+    </div>
+
+    <div class="stamps">
+      <span class="pstamp">Best streak 7</span>
+      <span class="pstamp gold">Goal hit</span>
+    </div>
+
+    <div class="piles">
+      <div class="pile"><div class="ph"><span style="font-weight:700;color:var(--terra)">Hard</span><span class="pn" style="color:var(--terra)">6</span></div><div class="pw">Comes back sooner</div></div>
+      <div class="pile"><div class="ph"><span style="font-weight:700;color:#7c5cff">Guessed</span><span class="pn" style="color:#7c5cff">3</span></div><div class="pw">Right, but luck</div></div>
+      <div class="pile"><div class="ph"><span style="font-weight:700;color:var(--blue)">Next</span><span class="pn" style="color:var(--blue)">11</span></div><div class="pw">Normal schedule</div></div>
+      <div class="pile"><div class="ph"><span style="font-weight:700;color:var(--green)">Easy</span><span class="pn" style="color:var(--green)">4</span></div><div class="pw">Retired. Won't show</div></div>
+    </div>
+
+    <div style="flex:1"></div>
+    <button class="ans right" style="justify-content:center;min-height:52px;font-weight:700;border-radius:13px;gap:8px">${I.bolt} Drill the 9 hard + guessed</button>
+    <div style="display:flex;gap:9px">
+      <button class="ans" style="flex:1;justify-content:center;min-height:46px">${I.play} Keep going</button>
+      <button class="ans" style="flex:1;justify-content:center;min-height:46px">${I.home} Home</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- DECK ---------------- */
+const deckAppbar = `
+  <div class="appbar">
+    <div class="brand">${I.wheel.replace('class="wm"','class="wm"')}Simata</div>
+    <div class="icons"><div class="ib">${I.chart}</div><div class="ib">${I.cog}</div></div>
+  </div>`;
+
+function deckHome(){
+  return `
+  ${deckAppbar}
+  <div class="body scroll">
+    <div>
+      <div class="kicker">Today · deck ready</div>
+      <div class="headline">Let's go.<span class="big"><em>30</em> cards</span></div>
+    </div>
+
+    <div class="chancecard">
+      <div>
+        <div class="ck">Chance to pass</div>
+        <div class="cn">70%</div>
+      </div>
+      <div class="mini">
+        <div class="cs">up 6 points this week</div>
+        <div class="cs" style="font-weight:700;margin-top:4px">Keep the streak →</div>
+      </div>
+    </div>
+
+    <div class="modes">
+      <div class="mode tall blue">
+        <div><div class="mk">Train</div><div class="mn">30</div><div class="ma">23 due · 7 new · best next</div></div>
+        <div class="arrow">${I.right}</div>
+      </div>
+      <div class="mode acid"><div class="mk">Sweep</div><div class="mn">512</div><div class="ma">unseen left</div></div>
+      <div class="mode coral"><div class="mk">Weak</div><div class="mn">41</div><div class="ma">to drill</div></div>
+      <div class="mode ink" style="grid-column:1 / -1; min-height:64px; flex-direction:row; align-items:center; justify-content:space-between"><div style="display:flex;align-items:center;gap:9px"><span style="display:grid;place-items:center;width:26px;height:26px">${I.clipboard}</span><div><div class="mk">Mock exam</div><div class="ma">Full test · 40 questions</div></div></div><div class="arrow">${I.right}</div></div>
+    </div>
+
+    <div class="ticker"><b>SEEN</b> 512/825 <span class="sep">·</span> <b>WEAK</b> 41 <span class="sep">·</span> <b>STREAK</b> 4 <span class="sep">·</span> <b>NEW</b> 7</div>
+  </div>`;
+}
+
+function deckQuiz(){
+  return `
+  ${deckAppbar}
+  <div class="qbody">
+    <div class="toprow">
+      <button class="stopbtn">${I.stop}</button>
+      <span class="idx"><b>12</b> / 30</span>
+      <span class="streak">${I.flame} 4 in a row</span>
+    </div>
+
+    <div class="deckwrap">
+      <div class="qcard">
+        <div class="tab">Q-142</div>
+        <div class="qmeta">
+          <span class="qid">QUESTION</span>
+          <div class="tools"><div class="tool">${I.flame}</div><div class="tool">${I.feather}</div><div class="tool">${I.note}</div></div>
+        </div>
+        <div class="imgslot">
+          ${carLine('#b8b2a4')}
+          <div class="cap">No picture — answer from the text</div>
+        </div>
+        <div class="qtext">What must you do when you see this sign?</div>
+        <div class="answers">
+          <button class="ans right"><span class="n">A</span><span class="t">Give way to traffic on the major road</span><span class="m">${I.check}</span></button>
+          <button class="ans dim"><span class="n">B</span><span class="t">Stop and wait for a signal</span><span class="m"></span></button>
+          <button class="ans wrong"><span class="n">C</span><span class="t">Speed up to clear the junction</span><span class="m">${I.cross}</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sortbar">
+      <button class="sbtn hard">${I.left}<span>Hard</span></button>
+      <button class="sbtn easy">${I.up}<span>Easy</span></button>
+      <button class="sbtn big">Next ${I.right}</button>
+    </div>
+  </div>`;
+}
+
+function deckSummary(){
+  return `
+  ${deckAppbar}
+  <div class="body scroll">
+    <div class="kicker">Run over · stopped by you</div>
+    <div class="score"><div class="sn">24</div><div class="sc"><b>answered</b><br/><b>21</b> right · 3.4 s each</div></div>
+
+    <div class="seg">
+      <i style="width:25%;background:var(--coral)"></i>
+      <i style="width:12.5%;background:var(--violet)"></i>
+      <i style="width:45.8%;background:var(--blue)"></i>
+      <i style="width:16.7%;background:var(--acid)"></i>
+    </div>
+    <div class="legend"><span>Hard 6</span><span>Guess 3</span><span>Next 11</span><span>Easy 4</span></div>
+
+    <div class="blocks">
+      <div class="block" style="background:var(--acid)"><div class="bk">Best streak</div><div class="bn">7</div><div class="bw">new record</div></div>
+      <div class="block" style="background:var(--blue-soft)"><div class="bk">Today</div><div class="bn">32/50</div><div class="bw">goal hit</div></div>
+      <div class="block" style="background:var(--coral-soft)"><div class="bk">Hard</div><div class="bn">6</div><div class="bw">comes back sooner</div></div>
+      <div class="block" style="background:var(--violet-soft)"><div class="bk">Guessed</div><div class="bn">3</div><div class="bw">graded as hard</div></div>
+    </div>
+
+    <div style="flex:1"></div>
+    <button class="bigbtn">${I.bolt} Drill the 9 hard + guessed</button>
+    <div class="btnrow">
+      <button class="bigbtn">${I.play} Keep going</button>
+      <button class="bigbtn">${I.home} Home</button>
+    </div>
+  </div>`;
+}
+
+const DIRS = [
+  { id: "road", name: "A · The Long Road", sub: "journey · paper · stamps", sw: "#1f6b55" },
+  { id: "deck", name: "B · Deck", sub: "bold · blocks · card stack", sw: "#2b4dff" },
+];
+
+const stage = document.getElementById('stage');
+const switcher = document.getElementById('switcher');
+
+function screen(cls, html){ return `<div class="screen ${cls}">${html}</div>`; }
+function col(label, cls, html){ return `<div class="col"><div class="label">${label}</div><div class="phone"><div class="notch"></div>${screen(cls, html)}</div></div>`; }
+
+function render(id){
+  if (id === "road") {
+    stage.innerHTML = col("Home", "road", roadHome()) + col("Quiz · answered", "road", roadQuiz()) + col("Trip log", "road", roadSummary());
+  } else {
+    stage.innerHTML = col("Home", "deck", deckHome()) + col("Quiz · answered", "deck", deckQuiz()) + col("Scoreboard", "deck", deckSummary());
+  }
+}
+
+switcher.innerHTML = DIRS.map((d,i) =>
+  `<button data-i="${i}" class="${i===0?'on':''}"><span class="dot" style="background:${d.sw}"></span><span>${d.name}<span class="sub">${d.sub}</span></span></button>`
+).join("");
+switcher.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  switcher.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  render(DIRS[+b.dataset.i].id);
+}));
+render("road");
+</script>
+</body>
+</html>

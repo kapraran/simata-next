@@ -1,6 +1,7 @@
 import "@mantine/charts/styles.css";
 import "@mantine/core/styles.css";
 import { MantineProvider } from "@mantine/core";
+import "./index.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";

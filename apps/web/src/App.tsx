@@ -7,7 +7,7 @@ import {
   IconSettings,
   IconSteeringWheel,
 } from "@tabler/icons-react";
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Route, Routes, useMatch } from "react-router-dom";
 import { db } from "./data/db";
 import { LearnerProvider, useLearner, useSyncState } from "./data/learner";
 import { syncNow } from "./data/sync";
@@ -61,42 +61,46 @@ function SyncIndicator() {
 }
 
 export function App() {
+  // The quiz owns the whole screen height, so it gets less padding than other pages.
+  const inQuiz = useMatch("/quiz/:mode") !== null;
   return (
     <LearnerProvider>
-      <AppShell header={{ height: 56 }} padding="md">
-        <AppShell.Header>
-          <Group h="100%" px="md" justify="space-between">
-            <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
-              <Group gap="xs">
-                <IconSteeringWheel size={24} />
-                <Title order={4}>Simata</Title>
+      <AppShell header={inQuiz ? undefined : { height: 56 }} padding={inQuiz ? "xs" : "md"}>
+        {!inQuiz && (
+          <AppShell.Header>
+            <Group h="100%" px="md" justify="space-between">
+              <Link to="/" style={{ color: "inherit", textDecoration: "none" }}>
+                <Group gap="xs">
+                  <IconSteeringWheel size={24} />
+                  <Title order={4}>Simata</Title>
+                </Group>
+              </Link>
+              <Group gap={4}>
+                <SyncIndicator />
+                <ActionIcon
+                  component={Link}
+                  to="/stats"
+                  variant="subtle"
+                  color="gray"
+                  aria-label="Stats"
+                >
+                  <IconChartBar size={20} />
+                </ActionIcon>
+                <ActionIcon
+                  component={Link}
+                  to="/settings"
+                  variant="subtle"
+                  color="gray"
+                  aria-label="Settings"
+                >
+                  <IconSettings size={20} />
+                </ActionIcon>
               </Group>
-            </Link>
-            <Group gap={4}>
-              <SyncIndicator />
-              <ActionIcon
-                component={Link}
-                to="/stats"
-                variant="subtle"
-                color="gray"
-                aria-label="Stats"
-              >
-                <IconChartBar size={20} />
-              </ActionIcon>
-              <ActionIcon
-                component={Link}
-                to="/settings"
-                variant="subtle"
-                color="gray"
-                aria-label="Settings"
-              >
-                <IconSettings size={20} />
-              </ActionIcon>
             </Group>
-          </Group>
-        </AppShell.Header>
+          </AppShell.Header>
+        )}
         <AppShell.Main>
-          <Container size="xs" pt="md" pb="xl">
+          <Container size="xs" p={0} pt={inQuiz ? 0 : "md"} pb={inQuiz ? 0 : "xl"}>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/quiz/:mode" element={<QuizPage />} />

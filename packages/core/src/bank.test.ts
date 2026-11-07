@@ -32,9 +32,9 @@ describe("validateRawQuestion", () => {
 });
 
 describe("buildBank", () => {
-  it("maps available images to media keys and disables the rest", () => {
+  it("maps available images to media keys and flags the lost ones", () => {
     const B = "b".repeat(64);
-    const { bank, disabled } = buildBank(
+    const { bank, missingImages } = buildBank(
       [
         { id: "A 1", category: "A", text: "t", options: opts, image: url(H) },
         { id: "A 2", category: "A", text: "t", options: opts, image: url(B) },
@@ -44,9 +44,10 @@ describe("buildBank", () => {
       "v1",
     );
     expect(bank.questions[0]).toMatchObject({ image: `media/${H}.jpg` });
-    expect(bank.questions[1]?.disabled).toBe(true);
-    expect(bank.questions[2]?.disabled).toBeUndefined();
-    expect(disabled).toEqual([{ id: "A 2", reason: "image file missing" }]);
+    expect(bank.questions[1]?.imageMissing).toBe(true);
+    expect(bank.questions[1]?.disabled).toBeUndefined();
+    expect(bank.questions[2]?.imageMissing).toBeUndefined();
+    expect(missingImages).toEqual([{ id: "A 2", reason: "image file missing" }]);
     expect(bank.categories).toEqual(["A", "B"]);
   });
   it("flags questions that mention a picture without one", () => {

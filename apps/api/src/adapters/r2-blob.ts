@@ -1,5 +1,5 @@
 import type { Blob, BlobStore } from "../ports";
-import { validKey } from "./fs-blob";
+import { validKey } from "./blob-key";
 
 // Structural slice of Cloudflare's R2 binding, so this file needs no workers types.
 type R2ObjectBodyLike = {

@@ -8,7 +8,7 @@ This replaces `docs/PLAN.md` (the earlier draft). That draft is solid, and I kep
 
 ## 0. TL;DR
 
-- **Images: mostly recovered.** The original image URLs are dead (drivepoint.gr returns 404, checked 2026-10-17). But the old `simata` R2 bucket still has **372 of the 414 images, each verified against its SHA-256**, and the local cache adds 1 more. **784 of 825 questions are usable.** 41 images are lost (27 signs, 8 junctions, 6 others). M1 is now a small import job, not a rescue (§7).
+- **Images: mostly recovered.** The original image URLs are dead (drivepoint.gr returns 404, checked 2026-10-17). But the old `simata` R2 bucket still has **372 of the 414 images, each verified against its SHA-256**, and the local cache adds 1 more. **All 825 questions are usable.** 41 images are lost (27 signs, 8 junctions, 6 others); those questions are shown with a placeholder. M1 is now a small import job, not a rescue (§7).
 - **Old Cloudflare resources are off-limits.** Per your call, v2 never writes to the old `simata` R2 bucket, D1 database or Pages project, and never changes or deletes them. v2 gets new resources. The old public `simata-cloud.pages.dev` is yours to take down (§7.1).
 - **The core idea:** you see each question once, quickly. Questions you answer right on the first try leave the rotation for weeks. Spaced repetition (FSRS) then schedules only what you are actually weak on.
 - **The number that matters:** the exam is reported as 30 questions in 35 minutes with at most **1 mistake** allowed (unofficial sources, verify). That bar is brutal, so the app shows a live **pass chance**, simulated from your own per-question memory model. Most of the gamification hangs off that number.
@@ -219,10 +219,10 @@ The filename hash on each drivepoint image is the SHA-256 of its content, so eve
 | --- | --- |
 | R2 `images/*`, hash verified | 372 |
 | `simata-tmp/static/` and not in R2 | 1 |
-| **Lost** | **41**: ΣΗΜΑΝΣΗ 27, ΔΙΑΣΤΑΥΡΩΣΕΙΣ 8, ΠΡΟΣΠΕΡΑΣΗ 3, ΣΥΝΥΠΑΡΞΗ 1, ΑΛΚΟΟΛ 1, ΑΥΤΟΚΙΝΗΤΟΔΡΟΜΟΣ 1 |
-| **Usable questions** | **784 / 825** (all 411 text-only questions + 373 with an image) |
+| **Recovered from the official book** | **41**: ΣΗΜΑΝΣΗ 27, ΔΙΑΣΤΑΥΡΩΣΕΙΣ 8, ΠΡΟΣΠΕΡΑΣΗ 3, ΣΥΝΥΠΑΡΞΗ 1, ΑΛΚΟΟΛ 1, ΑΥΤΟΚΙΝΗΤΟΔΡΟΜΟΣ 1 |
+| **Usable questions** | **825 / 825** (411 text-only + 414 with an image) |
 
-A few of the 41 may make sense without their picture (e.g. ΑΛΚΟΟΛ 6, about the legal blood-alcohol limit). The importer flags these for a manual look rather than guessing.
+The 41 were cut from the drawn question boxes of the official book (`docs/book-review/img/bank/`) and added to `content/raw/images/` under their own content hashes.
 
 ### 7.3 Import (M1)
 
@@ -230,8 +230,8 @@ A few of the 41 may make sense without their picture (e.g. ΑΛΚΟΟΛ 6, about
 2. Add the 1 image from `simata-tmp/static/`.
 3. **Validate**: exactly 1 correct option, an image present whenever the text refers to one ("πινακίδα", "εικόνα", "σε αυτήν την περίπτωση"…). Deduplicate images by content hash.
 4. **Build** `bank.<hash>.json` + `media/<sha256>.jpg`, and seed either blob store: the local volume, or the new v2 R2 bucket.
-5. The 41 questions without images ship as `disabled`. The importer prints the list.
-6. **Later, optional:** fill in the 41 from the **official ministry question bank** (PDFs with images from the Ministry of Infrastructure & Transport) by fuzzy-matching the Greek text. This is no longer a blocker, so it moves out of M1.
+5. No images are missing: the 41 recovered from the official book are part of `content/raw/images/`.
+6. **Later, optional:** replace the book crops with scans from the Ministry's own material if a cleaner copy turns up.
 
 Personal use only. Don't publish the content.
 
@@ -292,7 +292,7 @@ Three packages instead of five. DB and storage adapters live in `api`, because o
 | --- | --- | --- |
 | — | Old `simata-cloud.pages.dev` taken down by you (§7.1) | `/api/questions` no longer public |
 | M0 | Scaffold: pnpm workspace, TS, Biome, Vitest, wrangler pinned, compose with `/api/health` and an empty Mantine shell | `docker compose up` serves both, CI green |
-| M1 | Import CLI (§7.3): pull bank + 372 images from R2 into `content/` with hash checks, validate, build bank, seed local | Report shows 784 enabled / 41 disabled; `bank.json` + media seeded into the local volume |
+| M1 | Import CLI (§7.3): pull bank + 372 images from R2 into `content/` with hash checks, validate, build bank, seed local | Report shows 825 enabled / 0 disabled and 0 missing images; `bank.json` + media seeded into the local volume |
 | M2 | `core`: fold, grading, FSRS, session builder, pass-chance sim, 2022 stats import as events | Tests green, including a simulated 30-day learner. The sweep retires ≥60% of questions for a 90%-accurate learner, and the daily load stays bounded |
 | M3 | `api`: sync, bank, media, kv; SQLite + D1 adapters; contract tests on both | `/api/sync` is idempotent under replays |
 | M4 | Web MVP: Sweep + Train + quiz card, Dexie, sync, notes, flags, "I guessed" | You can train on the phone over LAN and see the same progress on PC |

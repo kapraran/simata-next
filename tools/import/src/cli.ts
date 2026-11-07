@@ -25,6 +25,9 @@ const bankDir = join(content, "bank");
 
 const sha256 = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
 
+/** Bump when the built bank's shape or rules change, so clients fetch the new bank. */
+const BANK_SCHEMA = 2;
+
 function arg(name: string, fallback?: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
   return i >= 0 ? process.argv[i + 1] : fallback;
@@ -69,6 +72,26 @@ async function r2Get(bucket: string, key: string, file: string): Promise<boolean
     "--remote",
     "--file",
     file,
+  ]);
+  return code === 0;
+}
+
+async function r2Put(
+  bucket: string,
+  key: string,
+  file: string,
+  contentType: string,
+): Promise<boolean> {
+  const { code } = await wrangler([
+    "r2",
+    "object",
+    "put",
+    `${bucket}/${key}`,
+    "--remote",
+    "--file",
+    file,
+    "--content-type",
+    contentType,
   ]);
   return code === 0;
 }
@@ -134,8 +157,10 @@ async function build() {
   const available = new Set(
     (await readdir(rawImages)).filter((f) => f.endsWith(".jpg")).map((f) => f.replace(".jpg", "")),
   );
-  const version = sha256(JSON.stringify(raw) + [...available].sort().join()).slice(0, 12);
-  const { bank, disabled, invalid, suspicious } = buildBank(raw, available, version);
+  const version = sha256(
+    `${BANK_SCHEMA}|${JSON.stringify(raw)}|${[...available].sort().join()}`,
+  ).slice(0, 12);
+  const { bank, missingImages, invalid, suspicious } = buildBank(raw, available, version);
 
   await rm(bankDir, { recursive: true, force: true });
   await mkdir(join(bankDir, "media"), { recursive: true });
@@ -154,13 +179,14 @@ async function build() {
     withImage: enabled.filter((q) => q.image).length,
     distinctImages: used.size,
     invalid,
-    disabledImages: disabled,
+    missingImages,
     suspicious,
   };
   await writeFile(join(content, "report.json"), JSON.stringify(report, null, 2));
   console.log(
     `bank ${version}: ${report.enabled} enabled / ${report.disabled} disabled, ` +
-      `${report.distinctImages} distinct images, ${invalid.length} invalid, ${suspicious.length} suspicious`,
+      `${report.distinctImages} distinct images, ${missingImages.length} missing images, ` +
+      `${invalid.length} invalid, ${suspicious.length} suspicious`,
   );
 }
 
@@ -170,6 +196,38 @@ async function seed() {
   await mkdir(dest, { recursive: true });
   await cp(bankDir, dest, { recursive: true });
   console.log(`seeded ${dest}`);
+}
+
+/** Upload the built bank + media to the R2 bucket the deployed Worker reads (MEDIA binding). */
+async function seedCloud() {
+  const bucket = arg("bucket", "simata-media") as string;
+  const files: { key: string; path: string; contentType: string }[] = [];
+
+  async function walk(dir: string, prefix: string) {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(path, `${prefix}${entry.name}/`);
+      } else {
+        files.push({
+          key: `${prefix}${entry.name}`,
+          path,
+          contentType: entry.name.endsWith(".json") ? "application/json" : "image/jpeg",
+        });
+      }
+    }
+  }
+  await walk(bankDir, "");
+
+  console.log(`uploading ${files.length} objects to ${bucket}`);
+  const failed: string[] = [];
+  let done = 0;
+  await pool(files, 6, async (f) => {
+    if (!(await r2Put(bucket, f.key, f.path, f.contentType))) failed.push(f.key);
+    if (++done % 50 === 0) console.log(`  ${done}/${files.length}`);
+  });
+  if (failed.length) throw new Error(`failed to upload: ${failed.slice(0, 10).join(", ")}`);
+  console.log(`seeded ${files.length} objects into ${bucket}`);
 }
 
 /** Convert the 2022 stats.json into events + flags (content/legacy.json) and show where that leaves you. */
@@ -222,11 +280,18 @@ async function legacy() {
 }
 
 const cmd = process.argv[2];
-const cmds: Record<string, () => Promise<void>> = { pull, build, seed, legacy };
+const cmds: Record<string, () => Promise<void>> = {
+  pull,
+  build,
+  seed,
+  "seed-cloud": seedCloud,
+  legacy,
+};
 const run = cmds[cmd ?? ""];
 if (!run) {
   console.error(
-    "usage: cli.ts pull [--bucket simata] [--extra-images dir] | build | seed [--data dir] | legacy --stats file [--push url]",
+    "usage: cli.ts pull [--bucket simata] [--extra-images dir] | build | seed [--data dir] | " +
+      "seed-cloud [--bucket simata-media] | legacy --stats file [--push url]",
   );
   process.exit(1);
 }

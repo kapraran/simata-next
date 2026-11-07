@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simata · playful balance mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #0e0f14;
+    color: #1a1b25;
+    font-family: "Inter", system-ui, sans-serif;
+    padding: 28px 20px 80px;
+  }
+
+  /* ---------- page chrome ---------- */
+  .top { max-width: 1200px; margin: 0 auto 20px; color: #ececf2; }
+  .top h1 { font-family: "Plus Jakarta Sans", sans-serif; font-weight: 800; font-size: 28px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .top p { margin: 0; color: #9a9aac; font-size: 14px; max-width: 760px; line-height: 1.55; }
+  .switcher { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px auto 30px; max-width: 1200px; }
+  .switcher button {
+    font: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer;
+    border: 1px solid #2a2b38; padding: 9px 16px; border-radius: 10px; color: #b7b7c6; background: #171821;
+    transition: all .16s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .switcher button:hover { border-color: #3a3b4c; color: #e4e4ee; }
+  .switcher button.on { color: #fff; background: #23242f; border-color: #4a4b5e; box-shadow: 0 0 0 3px rgba(120,140,255,.12); }
+  .switcher .sw { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+
+  .stage { display: flex; gap: 30px; overflow-x: auto; padding: 4px 4px 26px; max-width: 1200px; margin: 0 auto; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .col .label { color: #cfcfe0; font-weight: 700; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-family: "Inter", sans-serif; }
+
+  .phone {
+    width: 340px; height: 700px; flex: none; border-radius: 40px; padding: 10px;
+    background: #000; box-shadow: 0 24px 60px rgba(0,0,0,.55), inset 0 0 0 2px #2b2b3a; position: relative;
+  }
+  .screen {
+    width: 100%; height: 100%; border-radius: 32px; overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+    background: var(--bg); color: var(--ink); font-family: var(--font);
+  }
+  .notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 92px; height: 6px; border-radius: 6px; background: rgba(0,0,0,.22); z-index: 9; }
+
+  /* ============================================================
+     "TODAY" — recreated current look (Mantine defaults)
+     ============================================================ */
+  [data-style="today"] {
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --ink: #1a1b1e;
+    --muted: #868e96;
+    --border: #dee2e6;
+    --radius: 8px;
+    --radius-sm: 8px;
+    --accent: #228be6;
+    --accent-ink: #fff;
+    --accent-soft: #e7f5ff;
+    --shadow: none;
+    --shadow-sm: none;
+    --hard: #e8590c; --easy: #0ca678; --next: #228be6; --guess: #9c36b5;
+    --appbar-bg: #ffffff; --appbar-bd: 1px solid #e9ecef;
+  }
+  [data-style="today"] .card { border: 1px solid var(--border); }
+  [data-style="today"] .btn { border: 1px solid var(--border); }
+  [data-style="today"] .btn.primary { border-color: transparent; }
+  [data-style="today"] .btn.chipbtn { border: 0; }
+
+  /* ============================================================
+     "BALANCED" — clean base + restrained playful accents
+     ============================================================ */
+  [data-style="balanced"] {
+    --font: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    --bg: #f7f8fb;
+    --surface: #ffffff;
+    --ink: #191a24;
+    --muted: #70748a;
+    --border: #e8eaf1;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --accent: #6366f1;
+    --accent-ink: #fff;
+    --accent-soft: #eef0ff;
+    --shadow: 0 1px 2px rgba(20,24,50,.05), 0 10px 26px -14px rgba(30,34,80,.22);
+    --shadow-sm: 0 1px 2px rgba(20,24,50,.06), 0 6px 16px -10px rgba(30,34,80,.25);
+    --hard: #f97316; --easy: #14b8a6; --next: #6366f1; --guess: #8b5cf6;
+    --appbar-bg: rgba(255,255,255,.85); --appbar-bd: 1px solid var(--border);
+  }
+  [data-style="balanced"] .card { border: 1px solid var(--border); box-shadow: var(--shadow); }
+  [data-style="balanced"] .btn { border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+  [data-style="balanced"] .btn.primary {
+    border-color: transparent;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff), var(--accent));
+    box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  [data-style="balanced"] .btn.ghost { box-shadow: none; background: transparent; border-color: transparent; }
+  [data-style="balanced"] .qtext { font-weight: 700; }
+
+  /* ---------- shared app pieces ---------- */
+  .appbar {
+    flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 16px; height: 56px;
+    background: var(--appbar-bg); backdrop-filter: blur(10px);
+    border-bottom: var(--appbar-bd);
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 19px; letter-spacing: -.01em; }
+  .brand .wheel { width: 24px; height: 24px; color: var(--accent); }
+  .appbar .icons { display: flex; gap: 8px; align-items: center; }
+  .appbar .icons .ib { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--muted); }
+  .appbar .icons svg { width: 20px; height: 20px; }
+
+  .body { flex: 1; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .body.scroll { overflow-y: auto; }
+
+  .h-title { font-size: 24px; font-weight: 800; margin: 2px 0 0; display: flex; align-items: center; gap: 9px; letter-spacing: -.01em; }
+
+  .card { padding: 15px; border-radius: var(--radius); background: var(--surface); }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: 12px; padding: 5px 11px; border-radius: 999px; }
+  .pill.soft { background: var(--accent-soft); color: var(--accent); }
+  .pill.amber { background: #fff4e0; color: #b45309; }
+
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .stat { padding: 13px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .stat .k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .stat .k .ic { width: 16px; height: 16px; border-radius: 5px; display: grid; place-items: center; flex: none; color: #fff; }
+  .stat .k .ic svg { width: 11px; height: 11px; }
+  .stat .v { font-size: 27px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+  .stat .v small { font-size: 15px; font-weight: 700; color: var(--muted); }
+  [data-style="today"] .stat .k .ic { display: none; }
+  [data-style="today"] .stat .v { font-size: 22px; }
+
+  .btn {
+    font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; color: var(--ink);
+    background: var(--surface); padding: 11px 15px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .12s, box-shadow .12s, background .12s;
+  }
+  .btn svg { width: 18px; height: 18px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.ghost { background: transparent; }
+  .btn.soft { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { flex: 1; }
+  [data-style="today"] .btn-row .btn { font-weight: 600; }
+
+  /* run strip */
+  .strip { display: flex; align-items: center; gap: 10px; flex: none; padding: 0 2px; }
+  .roundbtn { width: 38px; height: 38px; flex: none; display: grid; place-items: center; cursor: pointer; }
+  .goal { flex: 1; height: 12px; border-radius: 999px; background: rgba(20,24,50,.08); overflow: visible; position: relative; }
+  .goal > i { display: block; height: 100%; width: 64%; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent)); }
+  .goal .marker { position: absolute; top: 50%; left: 64%; transform: translate(-50%,-50%); width: 20px; height: 20px; border-radius: 50%; background: var(--surface); box-shadow: 0 2px 6px rgba(20,24,50,.25); display: grid; place-items: center; }
+  .goal .marker svg { width: 12px; height: 12px; color: var(--accent); }
+  [data-style="today"] .goal .marker { display: none; }
+  [data-style="today"] .goal { height: 8px; border-radius: 999px; overflow: hidden; background: #e9ecef; }
+  [data-style="today"] .goal > i { background: #228be6; }
+  .goalnum { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .tally { display: flex; gap: 5px; font-weight: 800; font-size: 12px; }
+
+  /* quiz card */
+  .qcard { display: flex; flex-direction: column; gap: 11px; flex: 1; min-height: 0; }
+  .qmeta { display: flex; align-items: center; justify-content: space-between; }
+  .qmeta .qid { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+  .qmeta .tools { display: flex; gap: 4px; }
+  .qmeta .tool { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; color: var(--muted); }
+  .qmeta .tools svg { width: 16px; height: 16px; }
+
+  .imgslot { height: 132px; border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; position: relative; overflow: hidden; }
+  .imgslot .art { width: 104px; opacity: .95; }
+  .imgslot .cap { font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--muted); }
+  [data-style="today"] .imgslot.placeholder { border: 1.5px dashed var(--border); background: #f8f9fa; }
+  [data-style="balanced"] .imgslot.placeholder { background: var(--accent-soft); }
+
+  .qtext { font-size: 18px; font-weight: 650; line-height: 1.32; letter-spacing: -.01em; }
+  .options { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+  .opt { display: flex; align-items: center; gap: 11px; padding: 0 13px; min-height: 50px; text-align: left; font-weight: 600; }
+  .opt .num { width: 22px; height: 22px; flex: none; border-radius: 7px; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: rgba(20,24,50,.07); color: var(--muted); }
+  .opt .txt { flex: 1; line-height: 1.25; }
+  .opt .mark { width: 20px; flex: none; display: grid; place-items: center; }
+  .opt .mark svg { width: 20px; height: 20px; }
+  .opt.right { background: #e8f8f0; color: #0b6b45; border-color: #b6e6cf; }
+  .opt.right .num { background: #c6f0dc; color: #0b6b45; }
+  .opt.wrong { background: #fdeeee; color: #b02525; border-color: #f6c9c9; }
+  .opt.wrong .num { background: #f8d7d7; color: #b02525; }
+  .opt.dim { opacity: .55; }
+  [data-style="balanced"] .opt.right .mark { animation: pop .42s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes pop { 0% { transform: scale(.2) rotate(-18deg); } 60% { transform: scale(1.18) rotate(4deg); } 100% { transform: scale(1) rotate(0); } }
+
+  .sortbar { display: grid; grid-template-columns: 1fr 1fr 1.7fr; gap: 8px; flex: none; }
+  .sortbar .btn { min-height: 52px; flex-direction: column; gap: 1px; padding: 6px 4px; font-size: 12px; }
+  .sortbar .btn.big { flex-direction: row; font-size: 15px; gap: 8px; }
+  .sortbar .btn.hard { color: var(--hard); border-color: transparent; background: color-mix(in srgb, var(--hard) 10%, #fff); box-shadow: none; }
+  .sortbar .btn.easy { color: var(--easy); border-color: transparent; background: color-mix(in srgb, var(--easy) 10%, #fff); box-shadow: none; }
+  [data-style="today"] .sortbar .btn.hard { background: #fff4e6; }
+  [data-style="today"] .sortbar .btn.easy { background: #e6fcf5; }
+
+  /* summary */
+  .bignum { font-size: 50px; font-weight: 800; line-height: .95; letter-spacing: -.03em; }
+  .piles { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .pile { padding: 13px; display: flex; flex-direction: column; gap: 1px; }
+  .pile .ph { display: flex; justify-content: space-between; align-items: baseline; }
+  .pile .pn { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  .pile .pw { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+
+  .footnote { max-width: 1200px; margin: 20px auto 0; color: #9a9aac; font-size: 13px; line-height: 1.65; }
+  .footnote b { color: #dcdce8; }
+  .kbd { background: #23242f; border: 1px solid #33344a; border-radius: 6px; padding: 1px 7px; font-weight: 700; font-size: 11px; color: #c9c9db; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Simata — playful, without the cartoon</h1>
+  <p>Same structure and rules as today; the difference is warm, tasteful accents on a clean base. Compare the "Today" column against a balanced direction, and try the accent colours. Nothing in the app is changed yet — this is a mockup.</p>
+</div>
+
+<div class="switcher" id="switcher"></div>
+<div class="stage" id="stage"></div>
+
+<div class="footnote">
+  <p><b>What makes it playful but not kiddy:</b> a friendly accent colour with a soft tint (not primary red/blue everywhere), slightly rounder cards and pill buttons, a small colour-coded icon on each stat, a slim daily-goal bar with a little car marker, a warm line-art car only in the "no picture" slot, a soft green tint + tiny "pop" on the correct answer, and a bit of warmth in the microcopy. No thick outlines, no giant mascot.</p>
+  <p><b>Kept as-is:</b> the layout, the answer-first/sort-second flow, thumbs-reach sort bar, streak, colours per meaning (orange Hard · teal Easy · violet Guessed), and the run summary.</p>
+</div>
+
+<script>
+const I = {
+  wheel: `<svg class="wheel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M4.2 16l5.2-3M19.8 16l-5.2-3"/></svg>`,
+  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>`,
+  cog: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>`,
+  play: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg>`,
+  stop: `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`,
+  flame: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-3-2 1-4 3-4 6a7 7 0 0 0 14 0c0-5-7-11-7-11z"/></svg>`,
+  bolt: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`,
+  cross: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  left: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>`,
+  right: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`,
+  feather: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4C13 4 8 9 6 14l-2 6 6-2c5-2 10-7 10-14z"/><path d="M6 18L18 6"/></svg>`,
+  note: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12l-4 4H4z"/><path d="M8 9h8M8 13h5"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>`,
+  clipboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg>`,
+  spark: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg>`,
+};
+
+/* Minimal line-art car: friendly, not googly-eyed. */
+function carArt(color){
+  return `<svg class="art" viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" stroke="${color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 84h164M46 84c0-6 5-11 11-11h106c6 0 11 5 11 11" />
+    <path d="M60 73c4-16 20-25 50-25s46 9 50 25"/>
+    <path d="M74 71c3-10 15-16 36-16s33 6 36 16"/>
+    <circle cx="70" cy="96" r="13"/><circle cx="150" cy="96" r="13"/>
+    <path d="M96 62h28" stroke-width="4"/>
+  </svg>`;
+}
+
+const appbar = `
+  <div class="appbar">
+    <div class="brand">${I.wheel}Simata</div>
+    <div class="icons"><div class="ib">${I.chart}</div><div class="ib">${I.cog}</div></div>
+  </div>`;
+
+const statIcons = {
+  due: `<span class="ic" style="background:#f97316">${I.bolt}</span>`,
+  new: `<span class="ic" style="background:#14b8a6">${I.spark}</span>`,
+  seen: `<span class="ic" style="background:#6366f1">${I.check}</span>`,
+  weak: `<span class="ic" style="background:#8b5cf6">${I.flame}</span>`,
+};
+
+function homeScreen(bal){
+  const seen = bal ? `512<small>/825</small>` : `512/825`;
+  return `
+  ${appbar}
+  <div class="body scroll">
+    <div class="h-title">Today ${bal ? `<span class="pill amber">${I.flame} 4 in a row</span>` : ``}</div>
+
+    <div class="card" style="display:flex;gap:15px;align-items:center">
+      <div style="position:relative;flex:none;width:92px;height:92px">
+        <svg viewBox="0 0 120 120" width="92" height="92">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(20,24,50,.08)" stroke-width="13"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="${bal ? 'var(--accent)' : '#40c057'}" stroke-width="13"
+            stroke-dasharray="314" stroke-dashoffset="94" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:23px">70%</div>
+      </div>
+      <div>
+        <div style="font-weight:800;font-size:15.5px;line-height:1.25">Chance to pass a mock exam today</div>
+        <div style="font-size:12.5px;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.4">Worked out from how well you remember each question right now.</div>
+      </div>
+    </div>
+
+    <div class="statgrid">
+      <div class="card stat"><div class="k">${bal?statIcons.due:''}Due now</div><div class="v">23</div></div>
+      <div class="card stat"><div class="k">${bal?statIcons.new:''}New left today</div><div class="v">7</div></div>
+      <div class="card stat"><div class="k">${bal?statIcons.seen:''}Seen</div><div class="v">${seen}</div></div>
+      <div class="card stat"><div class="k">${bal?statIcons.weak:''}Weak spots</div><div class="v">41</div></div>
+    </div>
+
+    ${bal ? `
+    <div>
+      <div class="goal"><i></i><span class="marker">${I.spark}</span></div>
+      <div class="goalnum" style="text-align:center;margin-top:6px">32 of 50 today · keep rolling</div>
+    </div>` : ``}
+
+    <div style="flex:1"></div>
+    <button class="btn primary" style="font-size:17px;padding:15px">${I.play} Train (30)</button>
+    <div class="btn-row">
+      <button class="btn ${bal?'soft':''}">${I.search} Sweep</button>
+      <button class="btn ${bal?'soft':''}">${I.clipboard} Exam</button>
+      <button class="btn ${bal?'soft':''}">${I.bolt} Weak</button>
+    </div>
+    ${bal ? `<div style="text-align:center;font-size:12px;color:var(--muted);font-weight:600">Nice — 7 fresh ones waiting today.</div>` : ``}
+  </div>`;
+}
+
+function quizScreen(bal){
+  return `
+  ${appbar}
+  <div class="body">
+    <div class="strip">
+      <button class="roundbtn btn ghost" style="padding:0">${I.stop}</button>
+      <div class="goal"><i></i>${bal?`<span class="marker">${I.spark}</span>`:``}</div>
+      <span class="goalnum">32/50</span>
+      <div class="tally"><span style="color:var(--hard)">3</span><span style="color:var(--guess)">9</span><span style="color:var(--easy)">5</span></div>
+      <span class="pill ${bal?'amber':''}" style="${bal?'':'background:#fff9db;color:#f08c00'}">${I.bolt} 4</span>
+    </div>
+
+    <div class="card qcard">
+      <div class="qmeta">
+        <div class="qid">Q-142</div>
+        <div class="tools"><div class="tool">${I.flame}</div><div class="tool">${I.feather}</div><div class="tool">${I.note}</div></div>
+      </div>
+
+      <div class="imgslot placeholder">
+        ${balancedCar(bal)}
+        <div class="cap">${bal ? 'No picture for this one — answer away' : 'No image'}</div>
+      </div>
+
+      <div class="qtext">What must you do when you see this sign?</div>
+
+      <div class="options">
+        <button class="opt right"><span class="num">1</span><span class="txt">Give way to traffic on the major road</span><span class="mark">${I.check}</span></button>
+        <button class="opt dim"><span class="num">2</span><span class="txt">Stop and wait for a signal</span><span class="mark"></span></button>
+        <button class="opt wrong"><span class="num">3</span><span class="txt">Speed up to clear the junction</span><span class="mark">${I.cross}</span></button>
+      </div>
+    </div>
+
+    <div class="sortbar">
+      <button class="btn hard">${I.left}<span>Hard</span></button>
+      <button class="btn easy">${I.up}<span>Easy</span></button>
+      <button class="btn big primary">Next ${I.right}</button>
+    </div>
+  </div>`;
+}
+function balancedCar(bal){ return bal ? carArt("var(--accent)") : `<svg class="art" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h16M6 15a2 2 0 1 0 4 0 2 2 0 0 0-4 0M14 15a2 2 0 1 0 4 0 2 2 0 0 0-4 0M7 15c.5-3 2.5-5 5-5s4.5 2 5 5"/></svg>`; }
+
+function summaryScreen(bal){
+  return `
+  ${appbar}
+  <div class="body scroll">
+    <div class="pill soft" style="align-self:flex-start">${I.home} You stopped the run</div>
+    <div class="bignum">24</div>
+    <div style="font-weight:700;margin-top:-4px;font-size:14px">answered · <span style="color:var(--easy)">21 right</span> · 3.4s each</div>
+
+    <div class="btn-row" style="flex-wrap:wrap">
+      <span class="pill amber">${I.flame} Best streak 7</span>
+      <span class="pill soft" style="background:#e8f8f0;color:#0b6b45">${I.check} 32/50 · goal hit</span>
+    </div>
+
+    <div class="piles">
+      <div class="card pile"><div class="ph"><span style="font-weight:800;color:var(--hard)">Hard</span><span class="pn" style="color:var(--hard)">6</span></div><div class="pw">Comes back sooner</div></div>
+      <div class="card pile"><div class="ph"><span style="font-weight:800;color:var(--guess)">Guessed</span><span class="pn" style="color:var(--guess)">3</span></div><div class="pw">Right, but luck</div></div>
+      <div class="card pile"><div class="ph"><span style="font-weight:800;color:var(--next)">Next</span><span class="pn" style="color:var(--next)">11</span></div><div class="pw">Normal schedule</div></div>
+      <div class="card pile"><div class="ph"><span style="font-weight:800;color:var(--easy)">Easy</span><span class="pn" style="color:var(--easy)">4</span></div><div class="pw">Retired. Won't show</div></div>
+    </div>
+
+    <div style="flex:1"></div>
+    <button class="btn primary">${I.bolt} Drill the 9 hard + guessed</button>
+    <div class="btn-row">
+      <button class="btn ghost">${I.play} Keep going</button>
+      <button class="btn ghost">${I.home} Home</button>
+    </div>
+  </div>`;
+}
+
+function phone(screen, accent){
+  const styleAttr = accent ? `data-style="balanced" style="--accent:${accent.c};--accent-soft:${accent.soft}"` : `data-style="today"`;
+  return `<div class="phone"><div class="notch"></div><div class="screen" ${styleAttr}>${screen}</div></div>`;
+}
+function col(label, screen, accent){
+  return `<div class="col"><div class="label">${label}</div>${phone(screen, accent)}</div>`;
+}
+
+const ACCENTS = [
+  { id: "today", name: "Today (current)", c: null },
+  { id: "indigo", name: "Balanced · Indigo", c: { c: "#6366f1", soft: "#eef0ff" }, sw: "#6366f1" },
+  { id: "coral", name: "Balanced · Coral", c: { c: "#f2684a", soft: "#ffece6" }, sw: "#f2684a" },
+  { id: "blue", name: "Balanced · Sky", c: { c: "#2f80ed", soft: "#e9f2ff" }, sw: "#2f80ed" },
+];
+
+const stage = document.getElementById('stage');
+const switcher = document.getElementById('switcher');
+
+function render(opt){
+  const bal = opt.id !== "today";
+  stage.innerHTML =
+    col("Home", homeScreen(bal), opt.c) +
+    col("Quiz · answered", quizScreen(bal), opt.c) +
+    col("Run summary", summaryScreen(bal), opt.c);
+}
+function buildSwitcher(){
+  switcher.innerHTML = ACCENTS.map((a,i) =>
+    `<button data-i="${i}" class="${i===1?'on':''}">${a.sw?`<span class="sw" style="background:${a.sw}"></span>`:''}${a.name}</button>`
+  ).join("");
+  switcher.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    switcher.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    render(ACCENTS[+b.dataset.i]);
+  }));
+}
+buildSwitcher();
+render(ACCENTS[1]);
+</script>
+</body>
+</html>

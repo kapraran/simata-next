@@ -1,0 +1,57 @@
+# Requirements
+
+Running list of requirements gathered in conversation. Newest session at the bottom of each section. Detailed designs live in their own docs (linked). Add to this file whenever a requirement comes up; don't wait to be asked.
+
+---
+
+## Quiz UX
+
+Source: session 2026-11-06.
+
+- **The question must always be on screen.** Design around no or minimal scrolling. Question first, everything else secondary.
+- **Answer feedback must stay visible.** After answering, the right/wrong state, the correct answer and the question stay readable. Nothing overlays or hides them.
+- **No floating bars over content.** The sort controls (Hard / Easy / Next) sit in the page flow, not `position: fixed` over the card.
+- **Auto-advance off by default.** A correct answer stays on screen until the user moves on. The option stays in Settings for anyone who wants it.
+- **Compact layout on phones.** Image slot about 120 px, answer buttons about 44 px tall, tight spacing. Details in [UX-ANSWER-AND-SORT.md](UX-ANSWER-AND-SORT.md).
+- **Sort model and gestures:** see [UX-ANSWER-AND-SORT.md](UX-ANSWER-AND-SORT.md) (Answer first, sort second; every gesture has a button twin).
+- **Lost pictures don't hide questions.** Questions whose image file was lost are still shown and answerable, with a "picture lost" placeholder instead of being disabled. (Session 2026-11-07.)
+
+- **The question is the main player; run stats are one thin line.** Stop, daily-goal bar, tally and streak share a single 32 px strip. No separate RUN counter, no second row. The card has one quiet caption line (id + flag/note tools), then picture, question (18 px) and answers. (Session 2026-11-07. Screenshot showed stats rows plus card header pushing the question down and forcing a scroll.)
+- **The quiz fills the screen height and never scrolls the page.** The card scrolls inside itself when a question is long; the strip and the sort bar stay put. The picture slot shrinks on short screens (`clamp(72px, 15dvh, 130px)`). (Session 2026-11-07.)
+- **Sort bar is always in the layout.** Hard / Easy / Next are visible but locked until you answer ("Pick an answer"), so answering doesn't resize the card. Hard and Easy stack icon over label so the text is never clipped. (Session 2026-11-07.)
+
+## Browser / layout stability
+
+Source: session 2026-11-06.
+
+- **The page must not jump.** The browser chrome shrinking or growing, and the scrollbar appearing, must not move the UI. Done for desktop scrollbars (`scrollbar-gutter: stable` in `apps/web/src/index.css`).
+- **Answering must not resize the question card.** Tapping an answer may not change the card's height or reflow the options. Reserve layout slots (answer icon, saved note) instead of adding them on reveal. (Session 2026-11-07. See [UX-ANSWER-AND-SORT.md](UX-ANSWER-AND-SORT.md).)
+- **Open:** mobile address-bar behaviour (fixed-height layout vs `dvh`). Not decided. Needs a device test.
+- **Open:** fullscreen cannot be forced by the page. Options are F11, or installing as a standalone window (needs a web manifest).
+
+## Platform: PWA, Cloudflare Workers, portable Docker
+
+Source: session 2026-11-07.
+
+- **PWA, to current best practice.** Web app manifest (name, icons incl. maskable, `display: standalone`, theme and background colours, start URL, scope). Service worker for offline use of the app shell and the question bank. Installable on desktop and phone. Follow the MDN / web.dev PWA checklist. Use an update flow that doesn't strand users on an old version.
+- **Hosted on Cloudflare Workers.** This is the production host. Config (`wrangler`) is not yet found in the repo. Status: open.
+- **Portable with Docker Compose.** The same app must also run from `docker-compose.yml` so it can move to any VM with no code change. Existing: `docker/Dockerfile` and `docker-compose.yml`. Status: needs checking that it covers the web app and API, not only the current setup.
+- **Single codebase, two targets.** Workers and Docker differ only in config (env vars, bindings, storage), not in app code. Storage differences must be behind one interface.
+- **Hosting target set.** Production is one Cloudflare Worker on the custom domain `simata.kapraran.dev` (Workers Static Assets for the SPA + `/api/*` on the same Worker), backed by D1 `simata-next` and R2 `simata-media`. Source: session 2026-11-07. Deployed and healthy.
+- **Auth is optional and config-switched, never removed.** Cloudflare Access is the intended login step: it authenticates the visitor and the Worker verifies the forwarded JWT (`Cf-Access-Jwt-Assertion`). For now it is **off** (`IDENTITY=open`, one shared user) to move faster; enable with `IDENTITY=access` plus `TEAM_DOMAIN`/`ACCESS_AUD`. The Access adapter stays in the code. Source: session 2026-11-07.
+- **PWA is required**, not optional: `vite-plugin-pwa`, manifest with maskable icons, standalone display, auto-update service worker. Source: session 2026-11-07.
+
+## Working style (for the agent)
+
+Source: session 2026-11-06.
+
+- Fix the UX, not the symptom. Patches that leave the same problem are not done.
+- Verify in a browser at phone size before calling a layout change finished.
+- Keep this file updated as requirements come up.
+
+## Content and data sourcing
+
+Source: session 2026-11-07.
+
+- **Prefer an official source for the questions and images.** The user asked to move off the third-party mirror (`drivepoint.gr`, where the current 825-question bank was captured) onto an official source. Finding: there is no public question-bank *dataset*, but the official textbook itself contains the full question bank with answers and images. The user placed the book at `C:\Users\nikos\dev\simata\book_AYTOKINHTA.pdf` (session 2026-11-07): *Θεωρητική Εκπαίδευση Υποψηφίων Οδηγών Αυτοκινήτων*, ΥΠΥΜΕ + Ίδρυμα Ευγενίδου, 1999 (ISBN 960-337-029-0), 393 pp. Structure: pp. 13–229 theory; pp. 230–389 the questions (*ΕΡΩΤΗΣΕΙΣ … ΚΥΚΛΟΦΟΡΙΑΚΗΣ ΑΓΩΓΗΣ / ΘΕΩΡΙΑΣ*) — ~847 numbered questions, each with an image and 2–3 options, the correct one marked `Σ` (σωστό) / wrong `Λ`; 1274 distinct embedded images; pp. 390–392 index. **Constraint:** the Greek text does not extract (subset fonts have a broken encoding — Greek comes out as mojibake, only digits/Latin survive), so reuse requires OCR or a rebuilt glyph map. It is the 1999 edition, so it will not map 1:1 to the app's captured ids. See [PLAN.md](PLAN.md) §10. Parsed results and a bank ↔ book comparison are in [BOOK-RECONCILIATION.md](BOOK-RECONCILIATION.md): the bank is the book's ΕΡΩΤΗΜΑΤΟΛΟΓΙΟ (same section names and numbering); ΣΗΜΑΝΣΗ and ΔΙΑΣΤΑΥΡΩΣΕΙΣ match verbatim (219/236, 84/101); ΠΕΡΙΒΑΛΛΟΝ and ΟΙΚΟΛΟΓΙΑ are absent from the 1999 edition.
+- **Never publish the question data or images.** The texts and images are Υ.Μ.Ε. / Ιδρύματος Ευγενίδου intellectual property; keep the bank for personal use only.

@@ -5,5 +5,7 @@ dist
 .dev.vars
 /data/
 /content/
+# Parsed book content and scans: copyrighted, never publish.
+/docs/book-review/
 *.log
 .DS_Store

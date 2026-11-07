@@ -14,7 +14,13 @@
     "import:pull": "npm run pull -w @simata/import --",
     "import:build": "npm run build-bank -w @simata/import",
     "import:seed": "npm run seed -w @simata/import",
-    "import:legacy": "npm run legacy -w @simata/import --"
+    "import:legacy": "npm run legacy -w @simata/import --",
+    "build:web": "npm run build -w @simata/web",
+    "dev:worker": "wrangler dev",
+    "deploy": "npm run build:web && wrangler deploy",
+    "db:migrate:remote": "wrangler d1 migrations apply simata-next --remote",
+    "db:migrate:local": "wrangler d1 migrations apply simata-next --local",
+    "seed:cloud": "npm run seed:cloud -w @simata/import"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

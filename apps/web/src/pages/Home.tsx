@@ -14,9 +14,9 @@ import { buildSession, mulberry32, newSeenBetween, passChance } from "@simata/co
 import {
   IconBolt,
   IconClipboardCheck,
+  IconPhotoOff,
   IconPlayerPlay,
   IconSearch,
-  IconTarget,
 } from "@tabler/icons-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -114,7 +114,7 @@ export function HomePage() {
       weak,
       enabled,
       seen: enabled - L.questions.filter((q) => !q.disabled && !states.has(q.id)).length,
-      hidden: L.questions.length - enabled,
+      missingPictures: L.questions.filter((q) => q.imageMissing).length,
     };
   }, [L, now]);
 
@@ -183,10 +183,12 @@ export function HomePage() {
         </Group>
       </Stack>
 
-      {s.hidden > 0 && (
+      {s.missingPictures > 0 && (
         <Group gap="xs" c="dimmed">
-          <IconTarget size={16} />
-          <Text size="xs">{s.hidden} questions are hidden because their pictures are lost.</Text>
+          <IconPhotoOff size={16} />
+          <Text size="xs">
+            {s.missingPictures} questions lost their picture. They are shown with a placeholder.
+          </Text>
         </Group>
       )}
     </Stack>

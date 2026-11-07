@@ -1,0 +1,5 @@
+# Cloudflare Worker (`wrangler dev` / `wrangler deploy`). Copy to .dev.vars for local runs.
+# IDENTITY: "open" (no login, shared user) or "access" (Cloudflare Access JWT).
+IDENTITY=open
+TEAM_DOMAIN=
+ACCESS_AUD=
